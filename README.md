@@ -11,8 +11,23 @@ up.
 
 ```
 {% for i in range(0, 10)}
-  var foo{{i}} = 0;
+  var foo{{i+1}} = 0;
 {% endfor %}
+```
+
+Generates the following code:
+
+```
+var foo1 = 0;
+var foo2 = 0;
+var foo3 = 0;
+var foo4 = 0;
+var foo5 = 0;
+var foo6 = 0;
+var foo7 = 0;
+var foo8 = 0;
+var foo9 = 0;
+var foo10 = 0;
 ```
 
 [1]: https://jinja.palletsprojects.com/
