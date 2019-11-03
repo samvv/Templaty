@@ -24,7 +24,7 @@ PRECEDENCE_TABLE = [
     (1, '-',  7),
     (1, '*',  7),
     (1, '~',  7),
-    (1, '**', 8)
+    (2, '**', 8)
     ]
 
 def is_right_assoc(name):
