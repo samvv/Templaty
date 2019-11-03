@@ -35,12 +35,30 @@ CODE_MODE = 1
 def token_type_to_string(tt):
     if tt == IDENTIFIER:
         return 'an identifier'
-    elif tt == KEYWORD:
-        return 'a keyword'
+    elif tt == FOR_KEYWORD:
+        return "'for'"
+    elif tt == IN_KEYWORD:
+        return "'in'"
+    elif tt == ENDFOR_KEYWORD:
+        return "'endfor'"
+    elif tt == WHILE_KEYWORD:
+        return "'while'"
+    elif tt == ENDWHILE_KEYWORD:
+        return "'while'"
     elif tt == STRING_LITERAL:
         return 'a string literal'
     elif tt == BOOLEAN:
         return "'True' or 'False'"
+    elif tt == OPEN_EXPRESSION_BLOCK:
+        return "'{{'"
+    elif tt == CLOSE_EXPRESSION_BLOCK:
+        return "'}}'"
+    elif tt == OPEN_STATEMENT_BLOCK:
+        return "'{%'"
+    elif tt == CLOSE_STATEMENT_BLOCK:
+        return "'%}'"
+    elif tt == TEXT:
+        return "some text"
 
 class Position:
 
