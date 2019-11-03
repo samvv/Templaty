@@ -3,6 +3,39 @@ from .scanner import *
 from .ast import *
 from .util import *
 
+PRECEDENCE_TABLE = [
+    (2, '<',  1),
+    (2, '<=', 1),
+    (2, '>',  1), 
+    (2, '>=', 1), 
+    (2, '!=', 1),
+    (2, '==', 1),
+    (2, '|',  2),
+    (2, '&',  3),
+    (2, '<<', 4),
+    (2, '>>', 4),
+    (2, '+',  5),
+    (2, '-',  5),
+    (2, '*',  6),
+    (2, '/',  6),
+    (2, '@',  6),
+    (2, '//', 6),
+    (2, '%',  6),
+    (1, '-',  7),
+    (1, '*',  7),
+    (1, '~',  7),
+    (1, '**', 8)
+    ]
+
+def is_right_assoc(name):
+    return name == '**'
+
+def get_operator_precedence(name, arity):
+    try:
+        return next(prec for (arity2, name2, prec) in PRECEDENCE_TABLE if name == name2 and arity == arity2)
+    except StopIteration:
+        return None
+
 class ParseError(RuntimeError):
 
     def __init__(self, filename, start_pos, end_pos, expected, actual):
@@ -44,11 +77,90 @@ class Parser:
             raise ParseError(self._scanner.get_filename(), t0.start_pos, t0.end_pos, [IDENTIFIER], self._get_text(t0))
         return VarPattern(t0)
 
-    def parse_expression(self):
+    def parse_func_args(self):
+        first = True
+        while True:
+            t0 = self.peek_token()
+            if t0.type == CLOSE_PAREN:
+                break
+            else:
+                if not first:
+                    if t0.type != COMMA:
+                        raise ParseError(self._scanner.get_filename(), t0.start_pos, t0.end_pos, [COMMA], self._get_text(t0))
+                else:
+                    first = False
+                yield self.parse_expression()
+
+    def parse_func_app(self):
         t0 = self.get_token()
-        if t0.type == IDENTIFIER:
-            return VarRefExpression(t0)
-        raise ParseError(self._scanner.get_filename(), t0.start_pos, t0.end_pos, [IDENTIFIER], self._get_text(t0))
+        if t0.type != OPEN_PAREN:
+            raise ParseError(self._scanner.get_filename(), t0.start_pos, t0.end_pos, [IDENTIFIER], self._get_text(t0))
+        t4 = self.get_token()
+        if t0.type != CLOSE_PAREN:
+            raise ParseError(self._scanner.get_filename(), t0.start_pos, t0.end_pos, [IDENTIFIER], self._get_text(t0))
+
+    def parse_app_expression(self):
+        e = self.parse_prim_expression()
+        t1 = self.peek_token()
+        if t1.type == OPEN_PAREN:
+            return self.parse_func_app(e)
+        elif t1.type == OPEN_BRACKET:
+            return self.parse_arr_expr(e)
+        else:
+            return e
+
+    def parse_unary_expression(self):
+        heap = []
+        while True:
+            t0 = self.peek_token()
+            if t0.type == OPERATOR:
+                t0_prec = get_opeator_info(t0.value, 1)
+                heapq.heappush((t0_prec, t0))
+            else:
+                break
+        e = self.parse_app_expression()
+        while len(heap) > 0:
+            e = AppExpression(VarRefExpression(heappop(heap)[1]), [e])
+        return e
+
+    def parse_prim_expression(self):
+        t0 = self.get_token()
+        if t0.type == OPEN_PAREN:
+            e = self.parse_expression()
+            t1 = self.get_token()
+            if t1.type != CLOSE_PAREN:
+                raise ParseError(self._scanner.get_filename(), t1.start_pos, t1.end_pos, [CLOSE_PAREN], self._get_text(t1))
+            return e
+        elif t0.type == IDENTIFIER:
+            return VarRefExpression(self._get_text(t0))
+        else:
+            raise ParseError(self._scanner.get_filename(), t0.start_pos, t0.end_pos, [IDENTIFIER], self._get_text(t0))
+
+    def parse_binary_operators(self, lhs, min_prec):
+        t0 = self.peek_token()
+        while True:
+            if t0.type != OPERATOR:
+                break
+            keep = t0
+            keep_prec = get_operator_precedence(keep.value, 2)
+            if keep_prec is None:
+                break
+            self.get_token()
+            rhs = self.parse_unary_expression()
+            t0 = self.peek_token()
+            while True:
+                if not t0.type == OPERATOR:
+                    break
+                t0_prec = get_operator_precedence(t0.value, 2)
+                if not (t0_prec is not None and (t0_prec > keep_prec or (is_right_assoc(t0.value) and t0_prec == keep_prec))):
+                    break
+                rhs = self.parse_binary_operators(rhs, t0_prec)
+                t0 = self.peek_token()
+            lhs = AppExpression(VarRefExpression(t0), [lhs, rhs])
+        return lhs
+
+    def parse_expression(self):
+        return self.parse_binary_operators(self.parse_app_expression(), 0)
 
     def parse_expression_block(self):
         t0 = self.get_token()

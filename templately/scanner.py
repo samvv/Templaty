@@ -5,10 +5,10 @@ def is_space(ch):
     return ch == '\t' or ch == '\n' or ch == '\r' or ch == ' '
 
 def is_id_start(ch):
-    return re.match(r'^[a-zA-Z]$', ch) is not None
+    return ch != EOF and re.match(r'^[a-zA-Z]$', ch) is not None
 
 def is_id_part(ch):
-    return re.match(r'^[a-zA-Z0-9]$', ch) is not None
+    return ch != EOF and re.match(r'^[a-zA-Z0-9]$', ch) is not None
 
 EOF = -1
 
@@ -26,6 +26,25 @@ CLOSE_EXPRESSION_BLOCK = 11
 OPEN_STATEMENT_BLOCK   = 12
 CLOSE_STATEMENT_BLOCK  = 13
 END_OF_FILE            = 14
+OPEN_PAREN             = 15
+CLOSE_PAREN            = 16
+OPERATOR               = 17
+OPEN_BRACKET           = 18
+CLOSE_BRACKET          = 19
+
+OPERATORS = ['+', '-', '*', '**', '/', '//', '%', '@', '<<', '>>', '&', '|', '^', '~', ':=', '<', '>', '<=', '>=', '==', '!=']
+
+def is_operator_start(ch):
+    for op in OPERATORS:
+        if op[0] == ch:
+            return True
+    return False
+
+def is_operator_part(ch):
+    for op in OPERATORS:
+        if ch in op[1:]:
+            return True
+    return False
 
 KEYWORDS = { 'for': FOR_KEYWORD, 'in': IN_KEYWORD, 'while': WHILE_KEYWORD, 'endfor': ENDFOR_KEYWORD, 'endwhile': ENDWHILE_KEYWORD }
 
@@ -59,6 +78,14 @@ def token_type_to_string(tt):
         return "'%}'"
     elif tt == TEXT:
         return "some text"
+    elif tt == OPEN_PAREN:
+        return "'('"
+    elif tt == CLOSE_PAREN:
+        return "')'"
+    elif tt == OPEN_BRACKET:
+        return "'['"
+    elif tt == CLOSE_BRACKET:
+        return "']'"
 
 class Position:
 
@@ -86,6 +113,10 @@ class Token:
         return self._type
 
     @property
+    def value(self):
+        return self._value
+
+    @property
     def start_pos(self):
         return self._start_pos
 
@@ -105,13 +136,13 @@ class ScanError(RuntimeError):
 
 class Scanner:
 
-    def __init__(self, filename, data):
+    def __init__(self, filename, data, is_code=False):
         self._ch = None
         self._data = data
         self._offset = 0
         self._filename = filename
         self._curr_pos = Position()
-        self._mode = TEXT_MODE
+        self._mode = CODE_MODE if is_code else TEXT_MODE 
 
     def get_filename(self):
         return self._filename
@@ -198,7 +229,9 @@ class Scanner:
             self.skip_ws()
             start_pos = self._curr_pos.clone()
             c0 = self.peek_char()
-            if c0 == '%':
+            if c0 == EOF:
+                return Token(END_OF_FILE, self._curr_pos.clone(), self._curr_pos.clone())
+            elif c0 == '%':
                 self.get_char()
                 c1 = self.peek_char()
                 if c1 == '}':
@@ -207,6 +240,18 @@ class Scanner:
                     return Token(CLOSE_STATEMENT_BLOCK, start_pos, self._curr_pos.clone())
                 else:
                     return Token(OPERATOR, start_pos, self._curr_pos.clone(), '%')
+            elif c0 == '(':
+                self.get_char()
+                return Token(OPEN_PAREN, start_pos, self._curr_pos.clone())
+            elif c0 == ')':
+                self.get_char()
+                return Token(CLOSE_PAREN, start_pos, self._curr_pos.clone())
+            elif c0 == '[':
+                self.get_char()
+                return Token(OPEN_BRACKET, start_pos, self._curr_pos.clone())
+            elif c0 == ']':
+                self.get_char()
+                return Token(CLOSE_BRACKET, start_pos, self._curr_pos.clone())
             elif c0 == '}':
                 self.get_char()
                 c1 = self.peek_char()
@@ -218,6 +263,14 @@ class Scanner:
                     raise ScanError(self._filename, self._curr_pos.clone(), c0)
             elif c0 == '\'':
                 return self.scan_string_lit()
+            elif is_operator_start(c0):
+                op = c0
+                self.get_char()
+                while is_operator_part(self.peek_char()): 
+                    op += self.get_char()
+                if not op in OPERATORS:
+                    raise ScanError(self._filename, start_pos, op)
+                return Token(OPERATOR, start_pos, self._curr_pos.clone(), op)
             elif is_id_start(c0):
                 name = self.scan_raw_identifier()
                 if name in KEYWORDS:

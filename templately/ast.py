@@ -23,6 +23,13 @@ class VarRefExpression(Expression):
         self.name = name
 
 
+class AppExpression(Expression):
+
+    def __init__(self, operator, operands, parent=None):
+        super().__init__(parent)
+        self.operator = operator
+        self.operands = operands
+
 class Statement(Node):
     pass
 
