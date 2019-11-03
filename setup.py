@@ -9,12 +9,12 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
-    name='tecoge',
+    name='templately',
     version='1.0.0',
     description='Generate programming code from template files',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    url='https://github.com/samvv/tecoge',
+    url='https://github.com/samvv/templately',
     author='Sam Vervaeck',
     author_email='vervaeck.sam@skynet.be',
     classifiers=[
@@ -36,11 +36,11 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'tecoge=tecoge:main',
+            'templately=templately:main',
         ],
     },
     project_urls={
-        'Bug Reports': 'https://github.com/samvv/tecoge/issues',
-        'Source': 'https://github.com/samvv/tecoge/',
+        'Bug Reports': 'https://github.com/samvv/templately/issues',
+        'Source': 'https://github.com/samvv/templately/',
     },
 )

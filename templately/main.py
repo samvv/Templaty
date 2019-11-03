@@ -14,6 +14,7 @@ def main(argv=None):
         contents = f.read()
 
     sc = Scanner(args.file, contents)
-    for t1 in sc.scan_all():
-        print(t1.get_text(contents))
+    p = Parser(sc)
+    for e1 in p.parse_all():
+        print(e1)
 
