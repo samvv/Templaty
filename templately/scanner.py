@@ -10,6 +10,9 @@ def is_id_start(ch):
 def is_id_part(ch):
     return ch != EOF and re.match(r'^[a-zA-Z0-9]$', ch) is not None
 
+def is_digit(ch):
+    return ch != EOF and re.match(r'^[0-9]$', ch) is not None
+
 EOF = -1
 
 TEXT                   = 0
@@ -31,6 +34,8 @@ CLOSE_PAREN            = 16
 OPERATOR               = 17
 OPEN_BRACKET           = 18
 CLOSE_BRACKET          = 19
+INTEGER                = 20
+COMMA                  = 21
 
 OPERATORS = ['+', '-', '*', '**', '/', '//', '%', '@', '<<', '>>', '&', '|', '^', '~', ':=', '<', '>', '<=', '>=', '==', '!=']
 
@@ -86,6 +91,8 @@ def token_type_to_string(tt):
         return "'['"
     elif tt == CLOSE_BRACKET:
         return "']'"
+    elif tt == INTEGER:
+        return 'an integer'
 
 class Position:
 
@@ -240,6 +247,9 @@ class Scanner:
                     return Token(CLOSE_STATEMENT_BLOCK, start_pos, self._curr_pos.clone())
                 else:
                     return Token(OPERATOR, start_pos, self._curr_pos.clone(), '%')
+            elif c0 == ',':
+                self.get_char()
+                return Token(COMMA, start_pos, self._curr_pos.clone())
             elif c0 == '(':
                 self.get_char()
                 return Token(OPEN_PAREN, start_pos, self._curr_pos.clone())
@@ -263,6 +273,11 @@ class Scanner:
                     raise ScanError(self._filename, self._curr_pos.clone(), c0)
             elif c0 == '\'':
                 return self.scan_string_lit()
+            elif is_digit(c0):
+                digits = c0
+                while is_digit(self.peek_char()):
+                    digits += self.get_char()
+                return Token(INTEGER, start_pos, self._curr_pos.clone(), int(digits))
             elif is_operator_start(c0):
                 op = c0
                 self.get_char()

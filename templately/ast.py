@@ -23,6 +23,12 @@ class VarRefExpression(Expression):
         self.name = name
 
 
+class ConstExpression(Expression):
+
+    def __init__(self, value, parent=None):
+        super().__init__(parent)
+        self.value = value
+
 class AppExpression(Expression):
 
     def __init__(self, operator, operands, parent=None):
@@ -32,6 +38,12 @@ class AppExpression(Expression):
 
 class Statement(Node):
     pass
+
+class TextStatement(Statement):
+
+    def __init__(self, text, parent=None):
+        super().__init__(parent)
+        self.text = text
 
 class ForInStatement(Statement):
 

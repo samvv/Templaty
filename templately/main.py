@@ -1,8 +1,10 @@
 
+import os, sys
 import argparse
 
 from .scanner import Scanner
 from .parser import Parser
+from .evaluator import evaluate
 
 def main(argv=None):
 
@@ -15,6 +17,7 @@ def main(argv=None):
 
     sc = Scanner(args.file, contents)
     p = Parser(sc)
-    for e1 in p.parse_all():
-        print(e1)
+    ss = p.parse_all()
+
+    evaluate(ss, sys.stdout)
 

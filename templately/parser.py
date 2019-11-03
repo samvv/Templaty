@@ -75,29 +75,34 @@ class Parser:
         t0 = self.get_token()
         if t0.type != IDENTIFIER:
             raise ParseError(self._scanner.get_filename(), t0.start_pos, t0.end_pos, [IDENTIFIER], self._get_text(t0))
-        return VarPattern(t0)
+        return VarPattern(t0.value)
 
     def parse_func_args(self):
         first = True
         while True:
             t0 = self.peek_token()
-            if t0.type == CLOSE_PAREN:
+            if t0.type == END_OF_FILE:
+                raise ParseError(self._scanner.get_filename(), t0.start_pos, t0.end_pos, [CLOSE_PAREN], t0)
+            elif t0.type == CLOSE_PAREN:
                 break
             else:
                 if not first:
                     if t0.type != COMMA:
                         raise ParseError(self._scanner.get_filename(), t0.start_pos, t0.end_pos, [COMMA], self._get_text(t0))
+                    self.get_token()
                 else:
                     first = False
                 yield self.parse_expression()
 
-    def parse_func_app(self):
+    def parse_func_app(self, e):
         t0 = self.get_token()
         if t0.type != OPEN_PAREN:
-            raise ParseError(self._scanner.get_filename(), t0.start_pos, t0.end_pos, [IDENTIFIER], self._get_text(t0))
-        t4 = self.get_token()
-        if t0.type != CLOSE_PAREN:
-            raise ParseError(self._scanner.get_filename(), t0.start_pos, t0.end_pos, [IDENTIFIER], self._get_text(t0))
+            raise ParseError(self._scanner.get_filename(), t0.start_pos, t0.end_pos, [OPEN_PAREN], self._get_text(t0))
+        args = list(self.parse_func_args())
+        t1 = self.get_token()
+        if t1.type != CLOSE_PAREN:
+            raise ParseError(self._scanner.get_filename(), t1.start_pos, t1.end_pos, [CLOSE_PAREN], self._get_text(t1))
+        return AppExpression(e, args)
 
     def parse_app_expression(self):
         e = self.parse_prim_expression()
@@ -131,10 +136,12 @@ class Parser:
             if t1.type != CLOSE_PAREN:
                 raise ParseError(self._scanner.get_filename(), t1.start_pos, t1.end_pos, [CLOSE_PAREN], self._get_text(t1))
             return e
+        elif t0.type == INTEGER:
+            return ConstExpression(t0.value)
         elif t0.type == IDENTIFIER:
             return VarRefExpression(self._get_text(t0))
         else:
-            raise ParseError(self._scanner.get_filename(), t0.start_pos, t0.end_pos, [IDENTIFIER], self._get_text(t0))
+            raise ParseError(self._scanner.get_filename(), t0.start_pos, t0.end_pos, [IDENTIFIER, INTEGER, OPEN_PAREN], self._get_text(t0))
 
     def parse_binary_operators(self, lhs, min_prec):
         t0 = self.peek_token()
@@ -215,7 +222,7 @@ class Parser:
             return None
         elif t0.type == TEXT:
             self.get_token()
-            return t0
+            return TextStatement(self._get_text(t0))
         elif t0.type == OPEN_EXPRESSION_BLOCK:
             return self.parse_expression_block()
         elif t0.type == OPEN_STATEMENT_BLOCK:
