@@ -225,7 +225,6 @@ def evaluate(ast, indentation='  '):
 
     env = Env()
     for builtin_class in get_all_builtins():
-        print('adding {}'.format(builtin_class.name))
         env.set(builtin_class.name, builtin_class())
     return eval_statement_list(ast, env)
 

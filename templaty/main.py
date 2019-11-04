@@ -22,7 +22,6 @@ def main(argv=None):
 
     import_module('templaty.builtins')
 
-    print(contents)
     print(evaluate(ss))
 
 
