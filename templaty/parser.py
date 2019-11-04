@@ -75,7 +75,7 @@ class Parser:
     def parse_pattern(self):
         t0 = self.get_token()
         if t0.type != IDENTIFIER:
-            raise ParseError(self._scanner.get_filename(), t0.start_pos, t0.end_pos, [IDENTIFIER], self._get_text(t0))
+            self._raise_parse_error(t0, [IDENTIFIER])
         return VarPattern(t0.value)
 
     def parse_func_args(self):
@@ -83,13 +83,13 @@ class Parser:
         while True:
             t0 = self.peek_token()
             if t0.type == END_OF_FILE:
-                raise ParseError(self._scanner.get_filename(), t0.start_pos, t0.end_pos, [CLOSE_PAREN], t0)
+                self._raise_parse_error(t0, [CLOSE_PAREN])
             elif t0.type == CLOSE_PAREN:
                 break
             else:
                 if not first:
                     if t0.type != COMMA:
-                        raise ParseError(self._scanner.get_filename(), t0.start_pos, t0.end_pos, [COMMA], self._get_text(t0))
+                        self._raise_parse_error(t0, [COMMA])
                     self.get_token()
                 else:
                     first = False
@@ -98,11 +98,11 @@ class Parser:
     def parse_func_app(self, e):
         t0 = self.get_token()
         if t0.type != OPEN_PAREN:
-            raise ParseError(self._scanner.get_filename(), t0.start_pos, t0.end_pos, [OPEN_PAREN], self._get_text(t0))
+            self._raise_parse_error(t0, [OPEN_PAREN])
         args = list(self.parse_func_args())
         t1 = self.get_token()
         if t1.type != CLOSE_PAREN:
-            raise ParseError(self._scanner.get_filename(), t1.start_pos, t1.end_pos, [CLOSE_PAREN], self._get_text(t1))
+            self._raise_parse_error(t1, [CLOSE_PAREN])
         return AppExpression(e, args)
 
     def parse_app_expression(self):
@@ -171,13 +171,9 @@ class Parser:
         return self.parse_binary_operators(self.parse_app_expression(), 0)
 
     def parse_expression_block(self):
-        t0 = self.get_token()
-        if t0.type != OPEN_EXPRESSION_BLOCK:
-            raise ParseError(self._scanner.get_filename(), t0.start_pos, t0.end_pos, [OPEN_EXPRESSION_BLOCK], self._get_text(t0))
+        self._expect_token(OPEN_EXPRESSION_BLOCK)
         e = self.parse_expression()
-        t1 = self.get_token()
-        if t1.type != CLOSE_EXPRESSION_BLOCK:
-            raise ParseError(self._scanner.get_filename(), t1.start_pos, t1.end_pos, [CLOSE_EXPRESSION_BLOCK], self._get_text(t1))
+        self._expect_token(CLOSE_EXPRESSION_BLOCK)
         return ExpressionStatement(e)
 
     def _raise_parse_error(self, token, expected):
