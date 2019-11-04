@@ -36,28 +36,6 @@ def get_operator_precedence(name, arity):
     except StopIteration:
         return None
 
-def get_strip_mode(tt):
-    if tt == OPEN_STATEMENT_BLOCK:
-        return NO_STRIP
-    elif tt == OPEN_STATEMENT_BLOCK_STRIP:
-        return STRIP_BOTH
-    elif tt == OPEN_STATEMENT_BLOCK_STRIP_LEFT:
-        return STRIP_LEFT
-    elif tt == OPEN_STATEMENT_BLOCK_STRIP_RIGHT:
-        return STRIP_RIGHT
-
-def get_close_token_type(tt):
-    if tt == OPEN_STATEMENT_BLOCK:
-        return CLOSE_STATEMENT_BLOCK
-    elif tt == OPEN_STATEMENT_BLOCK_STRIP:
-        return CLOSE_STATEMENT_BLOCK_STRIP
-    elif tt == OPEN_STATEMENT_BLOCK_STRIP_LEFT:
-        return CLOSE_STATEMENT_BLOCK_STRIP_LEFT
-    elif tt == OPEN_STATEMENT_BLOCK_STRIP_RIGHT:
-        return CLOSE_STATEMENT_BLOCK_STRIP_RIGHT
-    elif tt == OPEN_EXPRESSION_BLOCK:
-        return CLOSE_EXPRESSION_BLOCK
-
 class ParseError(RuntimeError):
 
     def __init__(self, filename, start_pos, end_pos, expected, actual):
@@ -207,20 +185,19 @@ class Parser:
 
     def parse_statement(self):
         t0 = self.get_token()
-        if t0.type != OPEN_STATEMENT_BLOCK and t0.type != OPEN_STATEMENT_BLOCK_STRIP and t0.type != OPEN_STATEMENT_BLOCK_STRIP_LEFT and t0.type != OPEN_STATEMENT_BLOCK_STRIP_RIGHT:
-            raise ParseError(self._scanner.get_filename(), t0.start_pos, t0.end_pos, [OPEN_STATEMENT_BLOCK, OPEN_STATEMENT_BLOCK_STRIP, OPEN_STATEMENT_BLOCK_STRIP_LEFT, OPEN_STATEMENT_BLOCK_STRIP_RIGHT], self._get_text(t0))
-        close_tt = get_close_token_type(t0.type)
+        if t0.type != OPEN_STATEMENT_BLOCK:
+            raise ParseError(self._scanner.get_filename(), t0.start_pos, t0.end_pos, [OPEN_STATEMENT_BLOCK], self._get_text(t0))
         t1 = self.get_token()
         if t1.type == FOR_KEYWORD:
-            self._statement_stack.append((close_tt, FOR_KEYWORD))
+            self._statement_stack.append(FOR_KEYWORD)
             patt = self.parse_pattern()
             t2 = self.get_token()
             if t2.type != IN_KEYWORD:
                 raise ParseError(self._scanner.get_filename(), t2.start_pos, t2.end_pos, [IN_KEYWORD], self._get_text(t2))
             e = self.parse_expression()
             t3 = self.get_token()
-            if t3.type != close_tt:
-                raise ParseError(self._scanner.get_filename(), t3.start_pos, t3.end_pos, [close_tt], self._get_text(t3))
+            if t3.type != CLOSE_STATEMENT_BLOCK:
+                raise ParseError(self._scanner.get_filename(), t3.start_pos, t3.end_pos, [CLOSE_STATEMENT_BLOCK], self._get_text(t3))
             body = list(self.parse_body_statements(t0.type))
             t4 = self.get_token()
             if t4.type != t0.type:
@@ -229,9 +206,9 @@ class Parser:
             if t5.type != ENDFOR_KEYWORD:
                 raise ParseError(self._scanner.get_filename(), t5.start_pos, t5.end_pos, [ENDFOR_KEYWORD], self._get_text(t5))
             t6 = self.get_token()
-            if t6.type != close_tt:
-                raise ParseError(self._scanner.get_filename(), t6.start_pos, t6.end_pos, [close_tt], self._get_text(t5))
-            return ForInStatement(patt, e, body, get_strip_mode(t0.type))
+            if t6.type != CLOSE_STATEMENT_BLOCK:
+                raise ParseError(self._scanner.get_filename(), t6.start_pos, t6.end_pos, [CLOSE_STATEMENT_BLOCK], self._get_text(t5))
+            return ForInStatement(patt, e, body)
 
     def parse_body_statements(self, open_tt):
         while True:

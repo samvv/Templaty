@@ -36,12 +36,6 @@ OPEN_BRACKET                      = 18
 CLOSE_BRACKET                     = 19
 INTEGER                           = 20
 COMMA                             = 21
-OPEN_STATEMENT_BLOCK_STRIP        = 22
-OPEN_STATEMENT_BLOCK_STRIP_LEFT   = 23
-OPEN_STATEMENT_BLOCK_STRIP_RIGHT  = 24
-CLOSE_STATEMENT_BLOCK_STRIP       = 25
-CLOSE_STATEMENT_BLOCK_STRIP_LEFT  = 26
-CLOSE_STATEMENT_BLOCK_STRIP_RIGHT = 27
 
 OPERATORS = ['+', '-', '*', '**', '/', '//', '%', '@', '<<', '>>', '&', '|', '^', '~', ':=', '<', '>', '<=', '>=', '==', '!=']
 
@@ -99,18 +93,6 @@ def token_type_to_string(tt):
         return "']'"
     elif tt == INTEGER:
         return 'an integer'
-    elif tt == OPEN_STATEMENT_BLOCK_STRIP:
-        return "'{%%'"
-    elif tt == OPEN_STATEMENT_BLOCK_STRIP_LEFT:
-        return "'{%-'"
-    elif tt == OPEN_STATEMENT_BLOCK_STRIP_RIGHT:
-        return "'{%+'"
-    elif tt == CLOSE_STATEMENT_BLOCK_STRIP:
-        return "'%%}'"
-    elif tt == CLOSE_STATEMENT_BLOCK_STRIP_LEFT:
-        return "'-%}'"
-    elif tt == CLOSE_STATEMENT_BLOCK_STRIP_RIGHT:
-        return "'+%}'"
 
 class Position:
 
@@ -244,18 +226,7 @@ class Scanner:
                     elif ch1 == '%':
                         self._mode = CODE_MODE
                         self.get_char()
-                        ch2 = self.peek_char()
-                        if ch2 == '-':
-                            self.get_char()
-                            return Token(OPEN_STATEMENT_BLOCK_STRIP_LEFT, start_pos, self._curr_pos.clone())
-                        elif ch2 == '+':
-                            self.get_char()
-                            return Token(OPEN_STATEMENT_BLOCK_STRIP_RIGHT, start_pos, self._curr_pos.clone())
-                        elif ch2 == '%':
-                            self.get_char()
-                            return Token(OPEN_STATEMENT_BLOCK_STRIP, start_pos, self._curr_pos.clone())
-                        else:
-                            return Token(OPEN_STATEMENT_BLOCK, start_pos, self._curr_pos.clone())
+                        return Token(OPEN_STATEMENT_BLOCK, start_pos, self._curr_pos.clone())
                     else:
                         text += ch0
                 else:
@@ -267,43 +238,10 @@ class Scanner:
             c0 = self.peek_char()
             if c0 == EOF:
                 return Token(END_OF_FILE, self._curr_pos.clone(), self._curr_pos.clone())
-            elif c0 == '-':
-                self.get_char()
-                c1 = self.peek_char()
-                if c1 == '%':
-                    self.get_char()
-                    c2 = self.get_char()
-                    if c2 != '}':
-                        raise ScanError(self._filename, self._curr_pos.clone(), c2)
-                    self._mode = TEXT_MODE
-                    return Token(CLOSE_STATEMENT_BLOCK_STRIP_LEFT, start_pos, self._curr_pos.clone())
-                else:
-                    return Token(OPERATOR, start_pos, self._curr_pos.clone(), '-')
-            elif c0 == '+':
-                self.get_char()
-                c1 = self.peek_char()
-                if c1 == '%':
-                    self.get_char()
-                    c2 = self.get_char()
-                    if c2 != '}':
-                        raise ScanError(self._filename, self._curr_pos.clone(), c2)
-                    self._mode = TEXT_MODE
-                    return Token(CLOSE_STATEMENT_BLOCK_STRIP_RIGHT)
-                else:
-                    return Token(OPERATOR, start_pos, self._curr_pos.clone(), '+')
             elif c0 == '%':
                 self.get_char()
-                c1 = self.peek_char()
-                if c1 == '%':
-                    self.get_char()
-                    c2 = self.get_char()
-                    if c2 == '}':
-                        self.get_char()
-                        self._mode = TEXT_MODE
-                        return Token(CLOSE_STATEMENT_BLOCK_STRIP, start_pos, self._curr_pos.clone())
-                    else:
-                        raise ScanError(self._filename, self._curr_pos.clone(), c2)
-                elif c1 == '}':
+                c1 = self.get_char()
+                if c1 == '}':
                     self.get_char()
                     self._mode = TEXT_MODE
                     return Token(CLOSE_STATEMENT_BLOCK, start_pos, self._curr_pos.clone())
