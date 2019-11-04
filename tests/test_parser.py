@@ -7,6 +7,13 @@ import unittest
 
 class TestParser(unittest.TestCase):
 
+    def test_string_lit(self):
+        sc = Scanner('#<string_lit>', "'Hello!'", True)
+        p = Parser(sc)
+        e = p.parse_expression()
+        self.assertIsInstance(e, ConstExpression)
+        self.assertEqual(e.value, 'Hello!')
+
     def test_simple_add(self):
         sc = Scanner('#<simple_add>', 'a + b', True)
         p = Parser(sc)
@@ -19,7 +26,7 @@ class TestParser(unittest.TestCase):
         self.assertEqual(e.operands[1].name, 'b')
 
     def test_nested_add(self):
-        sc = Scanner('#<simple_add>', '(a + b) + c', True)
+        sc = Scanner('#<nested_add>', '(a + b) + c', True)
         p = Parser(sc)
         e = p.parse_expression()
         self.assertIsInstance(e, AppExpression)
@@ -33,7 +40,7 @@ class TestParser(unittest.TestCase):
         self.assertEqual(arg2.name, 'c')
 
     def test_binary_operator_precedence1(self):
-        sc = Scanner('#<simple_add>', 'a * b + c', True)
+        sc = Scanner('#<binary_operator_precedence1>', 'a * b + c', True)
         p = Parser(sc)
         e = p.parse_expression()
         self.assertIsInstance(e, AppExpression)
@@ -47,7 +54,7 @@ class TestParser(unittest.TestCase):
         self.assertEqual(arg2.name, 'c')
 
     def test_binary_operator_precedence2(self):
-        sc = Scanner('#<simple_add>', 'a + b * c', True)
+        sc = Scanner('#<binary_operator_precedence2>', 'a + b * c', True)
         p = Parser(sc)
         e = p.parse_expression()
         self.assertIsInstance(e, AppExpression)
@@ -62,7 +69,7 @@ class TestParser(unittest.TestCase):
 
 
     def test_binary_operator_precedence3(self):
-        sc = Scanner('#<simple_add>', 'a * b * c', True)
+        sc = Scanner('#<binary_operator_precedence3>', 'a * b * c', True)
         p = Parser(sc)
         e = p.parse_expression()
         self.assertIsInstance(e, AppExpression)
@@ -77,7 +84,7 @@ class TestParser(unittest.TestCase):
 
 
     def test_binary_operator_precedence4(self):
-        sc = Scanner('#<simple_add>', 'a ** b ** c', True)
+        sc = Scanner('#<binary_operator_precedence4>', 'a ** b ** c', True)
         p = Parser(sc)
         e = p.parse_expression()
         self.assertIsInstance(e, AppExpression)
