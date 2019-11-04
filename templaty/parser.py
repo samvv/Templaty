@@ -36,6 +36,12 @@ def get_operator_precedence(name, arity):
     except StopIteration:
         return None
 
+def get_end_token_type(tt):
+    if tt == JOIN_KEYWORD:
+        return ENDJOIN_KEYWORD
+    elif tt == FOR_KEYWORD:
+        return ENDFOR_KEYWORD
+
 class ParseError(RuntimeError):
 
     def __init__(self, filename, start_pos, end_pos, expected, actual):
@@ -60,12 +66,11 @@ class Parser:
         self._token_buffer = []
         self._statement_stack = []
 
-    def peek_token(self):
-        if len(self._token_buffer) > 0:
-            return self._token_buffer[0]
-        t0 = self._scanner.scan()
-        self._token_buffer.append(t0)
-        return t0
+    def peek_token(self, count=1):
+        while len(self._token_buffer) < count:
+            t0 = self._scanner.scan()
+            self._token_buffer.append(t0)
+        return self._token_buffer[count-1]
 
     def get_token(self):
         if len(self._token_buffer) > 0:
@@ -191,7 +196,7 @@ class Parser:
         self._expect_token(OPEN_STATEMENT_BLOCK)
         t1 = self.get_token()
         if t1.type == FOR_KEYWORD:
-            self._statement_stack.append(FOR_KEYWORD)
+            self._statement_stack.append(get_end_token_type(FOR_KEYWORD))
             patt = self.parse_pattern()
             self._expect_token(IN_KEYWORD)
             e = self.parse_expression()
@@ -202,7 +207,7 @@ class Parser:
             self._expect_token(CLOSE_STATEMENT_BLOCK)
             return ForInStatement(patt, e, body)
         elif t1.type == JOIN_KEYWORD:
-            self._statement_stack.append(JOIN_KEYWORD)
+            self._statement_stack.append(get_end_token_type(JOIN_KEYWORD))
             patt = self.parse_pattern()
             self._expect_token(IN_KEYWORD)
             e = self.parse_expression()
@@ -215,12 +220,17 @@ class Parser:
             self._expect_token(CLOSE_STATEMENT_BLOCK)
             return JoinStatement(patt, e, sep, body)
         else:
-            self._raise_parse_error(t1, [FOR_KEYWORD, JOIN_KEYWORD])
+            expected = [FOR_KEYWORD, JOIN_KEYWORD]
+            if len(self._statement_stack) > 0:
+                expected.append(self._statement_stack[-1])
+            self._raise_parse_error(t1, expected)
 
     def parse_body_statements(self):
+        close_tt = self._statement_stack[-1]
         while True:
-            t0 = self.peek_token()
-            if t0.type == OPEN_STATEMENT_BLOCK:
+            t0 = self.peek_token(1)
+            t1 = self.peek_token(2)
+            if t0.type == OPEN_STATEMENT_BLOCK and t1.type == close_tt:
                 break
             else:
                 yield self.parse()

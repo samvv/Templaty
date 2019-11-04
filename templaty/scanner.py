@@ -107,7 +107,7 @@ def token_type_to_string(tt):
         return 'an integer'
     elif tt == JOIN_KEYWORD:
         return "'join'"
-    elif tt == ENDJIN_KEYWORD:
+    elif tt == ENDJOIN_KEYWORD:
         return "'endjoin'"
     elif tt == WITH_KEYWORD:
         return "'with'"
