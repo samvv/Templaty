@@ -9,12 +9,12 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
-    name='templately',
+    name='templaty',
     version='1.0.0',
     description='Generate programming code from template files',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    url='https://github.com/samvv/templately',
+    url='https://github.com/samvv/Templaty',
     author='Sam Vervaeck',
     author_email='vervaeck.sam@skynet.be',
     classifiers=[
@@ -36,11 +36,11 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'templately=templately:main',
+            'templaty=templaty:main',
         ],
     },
     project_urls={
-        'Bug Reports': 'https://github.com/samvv/templately/issues',
-        'Source': 'https://github.com/samvv/templately/',
+        'Bug Reports': 'https://github.com/samvv/Templaty/issues',
+        'Source': 'https://github.com/samvv/Templaty/',
     },
 )

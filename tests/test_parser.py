@@ -1,7 +1,7 @@
 
-from templately.scanner import Scanner
-from templately.parser import Parser
-from templately.ast import *
+from templaty.scanner import Scanner
+from templaty.parser import Parser
+from templaty.ast import *
 
 import unittest
 
