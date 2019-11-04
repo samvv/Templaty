@@ -49,6 +49,14 @@ class ExpressionStatement(Statement):
         super().__init__()
         self.expression = expression
 
+class IfStatement(Statement):
+
+    def __init__(self, condition, consequent, alternative):
+        super().__init__()
+        self.condition = condition
+        self.consequent = consequent
+        self.alternative = alternative
+
 class JoinStatement(Statement):
 
     def __init__(self, pattern, expression, separator, body):

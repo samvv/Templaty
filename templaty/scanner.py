@@ -39,6 +39,9 @@ COMMA                             = 21
 JOIN_KEYWORD                      = 22
 ENDJOIN_KEYWORD                   = 23
 WITH_KEYWORD                      = 24
+IF_KEYWORD                        = 25
+ELSE_KEYWORD                      = 26
+ENDIF_KEYWORD                     = 27
 
 OPERATORS = ['+', '-', '*', '**', '/', '//', '%', '@', '<<', '>>', '&', '|', '^', '~', ':=', '<', '>', '<=', '>=', '==', '!=']
 
@@ -61,8 +64,11 @@ KEYWORDS = {
     'endfor': ENDFOR_KEYWORD, 
     'endwhile': ENDWHILE_KEYWORD, 
     'join': JOIN_KEYWORD, 
-    'endjoin': ENDJOIN_KEYWORD, 
-    'with': WITH_KEYWORD
+    'endjoin': ENDJOIN_KEYWORD,
+    'with': WITH_KEYWORD,
+    'if': IF_KEYWORD,
+    'else': ELSE_KEYWORD,
+    'endif': ENDIF_KEYWORD
     }
 
 TEXT_MODE = 0
@@ -111,6 +117,12 @@ def token_type_to_string(tt):
         return "'endjoin'"
     elif tt == WITH_KEYWORD:
         return "'with'"
+    elif tt == IF_KEYWORD:
+        return "'if'"
+    elif tt == ELSE_KEYWORD:
+        return "'else'"
+    elif tt == ENDIF_KEYWORD:
+        return "'endif'"
 
 class Position:
 

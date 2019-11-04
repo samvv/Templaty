@@ -181,6 +181,14 @@ def evaluate(ast, data={}, indentation='  '):
                 curr_indent = last_indent
             return stmt.text
 
+        elif isinstance(stmt, IfStatement):
+            if eval_code_expr(stmt.condition, env):
+                env2 = env.fork()
+                return eval_statement_list(stmt.consequent, env2)
+            else:
+                env2 = env.fork()
+                return eval_statement_list(stmt.alternative, env2)
+
         elif isinstance(stmt, ForInStatement):
             rng = eval_code_expr(stmt.expression, env)
             env2 = env.fork()

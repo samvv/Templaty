@@ -15,6 +15,14 @@ def my_plus(a, b):
 def my_minus(a ,b):
     return a - b
 
+@func('==')
+def my_equality(a, b):
+    return a == b
+
+@func('%')
+def my_modulo(a, b):
+    return a % b
+
 class NowBuiltin(VariableBuiltin):
 
     name = 'now'

@@ -195,8 +195,21 @@ class Parser:
     def parse_statement(self):
         self._expect_token(OPEN_STATEMENT_BLOCK)
         t1 = self.get_token()
-        if t1.type == FOR_KEYWORD:
-            self._statement_stack.append(get_end_token_type(FOR_KEYWORD))
+        if t1.type == IF_KEYWORD:
+            self._statement_stack.append([ENDIF_KEYWORD, ELSE_KEYWORD])
+            cond = self.parse_expression()
+            self._expect_token(CLOSE_STATEMENT_BLOCK)
+            then = list(self.parse_body_statements())
+            self._expect_token(OPEN_STATEMENT_BLOCK)
+            self._expect_token(ELSE_KEYWORD)
+            self._expect_token(CLOSE_STATEMENT_BLOCK)
+            alt = list(self.parse_body_statements())
+            self._expect_token(OPEN_STATEMENT_BLOCK)
+            self._expect_token(ENDIF_KEYWORD)
+            self._expect_token(CLOSE_STATEMENT_BLOCK)
+            return IfStatement(cond, then, alt)
+        elif t1.type == FOR_KEYWORD:
+            self._statement_stack.append([ENDFOR_KEYWORD])
             patt = self.parse_pattern()
             self._expect_token(IN_KEYWORD)
             e = self.parse_expression()
@@ -207,7 +220,7 @@ class Parser:
             self._expect_token(CLOSE_STATEMENT_BLOCK)
             return ForInStatement(patt, e, body)
         elif t1.type == JOIN_KEYWORD:
-            self._statement_stack.append(get_end_token_type(JOIN_KEYWORD))
+            self._statement_stack.append([ENDJOIN_KEYWORD])
             patt = self.parse_pattern()
             self._expect_token(IN_KEYWORD)
             e = self.parse_expression()
@@ -220,17 +233,17 @@ class Parser:
             self._expect_token(CLOSE_STATEMENT_BLOCK)
             return JoinStatement(patt, e, sep, body)
         else:
-            expected = [FOR_KEYWORD, JOIN_KEYWORD]
+            expected = [FOR_KEYWORD, JOIN_KEYWORD, IF_KEYWORD]
             if len(self._statement_stack) > 0:
-                expected.append(self._statement_stack[-1])
+                expected.extend(self._statement_stack[-1])
             self._raise_parse_error(t1, expected)
 
     def parse_body_statements(self):
-        close_tt = self._statement_stack[-1]
+        close_tts = self._statement_stack[-1]
         while True:
             t0 = self.peek_token(1)
             t1 = self.peek_token(2)
-            if t0.type == OPEN_STATEMENT_BLOCK and t1.type == close_tt:
+            if t0.type == OPEN_STATEMENT_BLOCK and t1.type in close_tts:
                 break
             else:
                 yield self.parse()
