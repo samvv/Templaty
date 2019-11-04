@@ -1,16 +1,14 @@
 
 class Node:
-
-    def __init__(self, parent=None):
-        self.parent = parent
+    pass
 
 class Pattern(Node):
     pass
 
 class VarPattern(Pattern):
 
-    def __init__(self, name, parent=None):
-        super().__init__(parent)
+    def __init__(self, name):
+        super().__init__()
         self.name = name
 
 class Expression(Node):
@@ -18,21 +16,21 @@ class Expression(Node):
 
 class VarRefExpression(Expression):
 
-    def __init__(self, name, parent=None):
-        super().__init__(parent)
+    def __init__(self, name):
+        super().__init__()
         self.name = name
 
 
 class ConstExpression(Expression):
 
-    def __init__(self, value, parent=None):
-        super().__init__(parent)
+    def __init__(self, value):
+        super().__init__()
         self.value = value
 
 class AppExpression(Expression):
 
-    def __init__(self, operator, operands, parent=None):
-        super().__init__(parent)
+    def __init__(self, operator, operands):
+        super().__init__()
         self.operator = operator
         self.operands = operands
 
@@ -41,14 +39,37 @@ class Statement(Node):
 
 class TextStatement(Statement):
 
-    def __init__(self, text, parent=None):
-        super().__init__(parent)
+    def __init__(self, text):
+        super().__init__()
         self.text = text
+
+class ExpressionStatement(Statement):
+
+    def __init__(self, expression):
+        super().__init__()
+        self.expression = expression
+
+class JoinStatement(Statement):
+
+    def __init__(self, pattern, expression, separator, body):
+        super().__init__()
+        self.pattern = pattern
+        self.expression = expression
+        self.separator = separator
+        self.body = body
+
+    def to_json(self):
+        return {
+            'pattern': self.pattern.to_json(),
+            'expression': self.expression.to_json(),
+            'body': list(stmt.to_json() for stmt in self.body),
+            'separator': self.separator.to_json()
+            }
 
 class ForInStatement(Statement):
 
-    def __init__(self, pattern, expression, body, parent=None):
-        super().__init__(parent)
+    def __init__(self, pattern, expression, body):
+        super().__init__()
         self.pattern = pattern
         self.expression = expression
         self.body = body

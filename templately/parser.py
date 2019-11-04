@@ -126,23 +126,23 @@ class Parser:
                 break
         e = self.parse_app_expression()
         while len(heap) > 0:
-            e = AppExpression(VarRefExpression(heappop(heap)[1]), [e])
+            e = AppExpression(VarRefExpression(heappop(heap)[1].value), [e])
         return e
 
     def parse_prim_expression(self):
         t0 = self.get_token()
         if t0.type == OPEN_PAREN:
             e = self.parse_expression()
-            t1 = self.get_token()
-            if t1.type != CLOSE_PAREN:
-                raise ParseError(self._scanner.get_filename(), t1.start_pos, t1.end_pos, [CLOSE_PAREN], self._get_text(t1))
+            self._expect_token(CLOSE_PAREN)
             return e
+        elif t0.type == STRING_LITERAL:
+            return ConstExpression(t0.value)
         elif t0.type == INTEGER:
             return ConstExpression(t0.value)
         elif t0.type == IDENTIFIER:
-            return VarRefExpression(self._get_text(t0))
+            return VarRefExpression(t0.value)
         else:
-            raise ParseError(self._scanner.get_filename(), t0.start_pos, t0.end_pos, [IDENTIFIER, INTEGER, OPEN_PAREN], self._get_text(t0))
+            self._raise_parse_error(t0, [IDENTIFIER, INTEGER, OPEN_PAREN])
 
     def parse_binary_operators(self, lhs, min_prec):
         t0 = self.peek_token()
@@ -164,7 +164,7 @@ class Parser:
                     break
                 rhs = self.parse_binary_operators(rhs, t0_prec)
                 t0 = self.peek_token()
-            lhs = AppExpression(VarRefExpression(t0), [lhs, rhs])
+            lhs = AppExpression(VarRefExpression(keep.value), [lhs, rhs])
         return lhs
 
     def parse_expression(self):
@@ -178,42 +178,53 @@ class Parser:
         t1 = self.get_token()
         if t1.type != CLOSE_EXPRESSION_BLOCK:
             raise ParseError(self._scanner.get_filename(), t1.start_pos, t1.end_pos, [CLOSE_EXPRESSION_BLOCK], self._get_text(t1))
-        return e
+        return ExpressionStatement(e)
+
+    def _raise_parse_error(self, token, expected):
+        raise ParseError(self._scanner.get_filename(), token.start_pos, token.end_pos, expected, self._get_text(token))
 
     def _get_text(self, token):
         return token.get_text(self._scanner._data)
 
-    def parse_statement(self):
+    def _expect_token(self, tt):
         t0 = self.get_token()
-        if t0.type != OPEN_STATEMENT_BLOCK:
-            raise ParseError(self._scanner.get_filename(), t0.start_pos, t0.end_pos, [OPEN_STATEMENT_BLOCK], self._get_text(t0))
+        if t0.type != tt:
+            self._raise_parse_error(t0, [tt])
+
+    def parse_statement(self):
+        self._expect_token(OPEN_STATEMENT_BLOCK)
         t1 = self.get_token()
         if t1.type == FOR_KEYWORD:
             self._statement_stack.append(FOR_KEYWORD)
             patt = self.parse_pattern()
-            t2 = self.get_token()
-            if t2.type != IN_KEYWORD:
-                raise ParseError(self._scanner.get_filename(), t2.start_pos, t2.end_pos, [IN_KEYWORD], self._get_text(t2))
+            self._expect_token(IN_KEYWORD)
             e = self.parse_expression()
-            t3 = self.get_token()
-            if t3.type != CLOSE_STATEMENT_BLOCK:
-                raise ParseError(self._scanner.get_filename(), t3.start_pos, t3.end_pos, [CLOSE_STATEMENT_BLOCK], self._get_text(t3))
-            body = list(self.parse_body_statements(t0.type))
-            t4 = self.get_token()
-            if t4.type != t0.type:
-                raise ParseError(self._scanner.get_filename(), t4.start_pos, t4.end_pos, [t0.type], self._get_text(t4))
-            t5 = self.get_token()
-            if t5.type != ENDFOR_KEYWORD:
-                raise ParseError(self._scanner.get_filename(), t5.start_pos, t5.end_pos, [ENDFOR_KEYWORD], self._get_text(t5))
-            t6 = self.get_token()
-            if t6.type != CLOSE_STATEMENT_BLOCK:
-                raise ParseError(self._scanner.get_filename(), t6.start_pos, t6.end_pos, [CLOSE_STATEMENT_BLOCK], self._get_text(t5))
+            self._expect_token(CLOSE_STATEMENT_BLOCK)
+            body = list(self.parse_body_statements())
+            self._expect_token(OPEN_STATEMENT_BLOCK)
+            self._expect_token(ENDFOR_KEYWORD)
+            self._expect_token(CLOSE_STATEMENT_BLOCK)
             return ForInStatement(patt, e, body)
+        elif t1.type == JOIN_KEYWORD:
+            self._statement_stack.append(JOIN_KEYWORD)
+            patt = self.parse_pattern()
+            self._expect_token(IN_KEYWORD)
+            e = self.parse_expression()
+            self._expect_token(WITH_KEYWORD)
+            sep = self.parse_expression()
+            self._expect_token(CLOSE_STATEMENT_BLOCK)
+            body = list(self.parse_body_statements())
+            self._expect_token(OPEN_STATEMENT_BLOCK)
+            self._expect_token(ENDJOIN_KEYWORD)
+            self._expect_token(CLOSE_STATEMENT_BLOCK)
+            return JoinStatement(patt, e, sep, body)
+        else:
+            self._raise_parse_error(t1, [FOR_KEYWORD, JOIN_KEYWORD])
 
-    def parse_body_statements(self, open_tt):
+    def parse_body_statements(self):
         while True:
             t0 = self.peek_token()
-            if t0.type == open_tt:
+            if t0.type == OPEN_STATEMENT_BLOCK:
                 break
             else:
                 yield self.parse()
@@ -225,10 +236,10 @@ class Parser:
             return TextStatement(self._get_text(t0))
         elif t0.type == OPEN_EXPRESSION_BLOCK:
             return self.parse_expression_block()
-        elif t0.type == OPEN_STATEMENT_BLOCK or t0.type == OPEN_STATEMENT_BLOCK_STRIP or t0.type == OPEN_STATEMENT_BLOCK_STRIP_LEFT or t0.type == OPEN_STATEMENT_BLOCK_STRIP_RIGHT:
+        elif t0.type == OPEN_STATEMENT_BLOCK:
             return self.parse_statement()
         else:
-            raise ParseError(self._scanner.get_filename(), t0.start_pos, t0.end_pos, [TEXT, OPEN_EXPRESSION_BLOCK, OPEN_STATEMENT_BLOCK, OPEN_STATEMENT_BLOCK_STRIP, OPEN_STATEMENT_BLOCK_STRIP_LEFT, OPEN_STATEMENT_BLOCK_STRIP_RIGHT], self._get_text(t0))
+            self._raise_parse_error(t0, [TEXT, OPEN_EXPRESSION_BLOCK, OPEN_STATEMENT_BLOCK])
 
     def parse_all(self):
         while True:

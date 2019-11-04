@@ -36,6 +36,9 @@ OPEN_BRACKET                      = 18
 CLOSE_BRACKET                     = 19
 INTEGER                           = 20
 COMMA                             = 21
+JOIN_KEYWORD                      = 22
+ENDJOIN_KEYWORD                   = 23
+WITH_KEYWORD                      = 24
 
 OPERATORS = ['+', '-', '*', '**', '/', '//', '%', '@', '<<', '>>', '&', '|', '^', '~', ':=', '<', '>', '<=', '>=', '==', '!=']
 
@@ -51,7 +54,16 @@ def is_operator_part(ch):
             return True
     return False
 
-KEYWORDS = { 'for': FOR_KEYWORD, 'in': IN_KEYWORD, 'while': WHILE_KEYWORD, 'endfor': ENDFOR_KEYWORD, 'endwhile': ENDWHILE_KEYWORD }
+KEYWORDS = { 
+    'for': FOR_KEYWORD, 
+    'in': IN_KEYWORD, 
+    'while': WHILE_KEYWORD, 
+    'endfor': ENDFOR_KEYWORD, 
+    'endwhile': ENDWHILE_KEYWORD, 
+    'join': JOIN_KEYWORD, 
+    'endjoin': ENDJOIN_KEYWORD, 
+    'with': WITH_KEYWORD
+    }
 
 TEXT_MODE = 0
 CODE_MODE = 1
@@ -93,6 +105,12 @@ def token_type_to_string(tt):
         return "']'"
     elif tt == INTEGER:
         return 'an integer'
+    elif tt == JOIN_KEYWORD:
+        return "'join'"
+    elif tt == ENDJIN_KEYWORD:
+        return "'endjoin'"
+    elif tt == WITH_KEYWORD:
+        return "'with'"
 
 class Position:
 
@@ -202,7 +220,24 @@ class Scanner:
             self.get_char()
 
     def scan_string_lit(self):
-        return None # TODO
+        value = ''
+        start_pos = self._curr_pos.clone()
+        escaping = False
+        c0 = self.get_char()
+        if c0 != '\'':
+            raise ScanError(self._filename, self._curr_pos.clone(), c0)
+        while True:
+            ch = self.get_char()
+            if ch == '\'':
+                break
+            elif ch == '\\':
+                escaping = True
+                continue
+            if escaping:
+                value += unescape(ch)
+            else:
+                value += ch
+        return Token(STRING_LITERAL, start_pos, self._curr_pos.clone(), value)
 
     def scan(self):
         if self._mode == TEXT_MODE:
