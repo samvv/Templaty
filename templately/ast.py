@@ -36,8 +36,16 @@ class AppExpression(Expression):
         self.operator = operator
         self.operands = operands
 
+NO_STRIP    = 0
+STRIP_LEFT  = 1
+STRIP_RIGHT = 2
+STRIP_BOTH  = STRIP_LEFT | STRIP_RIGHT
+
 class Statement(Node):
-    pass
+
+    def __init__(self, strip_mode, parent=None):
+        super().__init__(parent)
+        self.strip_mode = strip_mode
 
 class TextStatement(Statement):
 
@@ -47,8 +55,8 @@ class TextStatement(Statement):
 
 class ForInStatement(Statement):
 
-    def __init__(self, pattern, expression, body, parent=None):
-        super().__init__(parent)
+    def __init__(self, pattern, expression, body, strip_mode, parent=None):
+        super().__init__(strip_mode, parent)
         self.pattern = pattern
         self.expression = expression
         self.body = body

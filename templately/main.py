@@ -18,6 +18,8 @@ def main(argv=None):
     sc = Scanner(args.file, contents)
     p = Parser(sc)
     ss = p.parse_all()
+    
+    print(contents)
+    print(evaluate(ss))
 
-    evaluate(ss, sys.stdout)
 
