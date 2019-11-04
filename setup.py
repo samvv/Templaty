@@ -18,7 +18,7 @@ setup(
     author='Sam Vervaeck',
     author_email='vervaeck.sam@skynet.be',
     classifiers=[
-        'Development Status :: 5 - Production/Stable',
+        'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
         'Topic :: Software Development :: Code Generators',
         'License :: OSI Approved :: MIT License',
