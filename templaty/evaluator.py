@@ -1,5 +1,6 @@
 
 from textwrap import indent, dedent
+from datetime import datetime
 import math
 
 from .ast import *
@@ -86,21 +87,44 @@ class Env:
 class Builtin:
     pass
 
-class RangeBuiltin(Builtin):
+class FunctionBuiltin(Builtin):
+    pass
 
-    name = 'range'
+class VariableBuiltin(Builtin):
+    pass
 
-    def apply(self, args):
-        if len(args) < 2:
-            raise TypeError("range() expects at least two arguments")
-        return range(args[0], args[1])
+def func(builtin_name):
+    def decorate(f):
+        class MyBuiltin(FunctionBuiltin):
+            name = builtin_name
+            def apply(self, args):
+                return f(*args)
+    return decorate
 
-class PlusBuiltin(Builtin):
+def getter(builtin_name):
+    def decorate(f):
+        class MyBuilting(VariableBuiltin):
+            name = builtin_name
+            def get(self):
+                return f()
 
-    name = '+'
+def has_class_property(cls, name):
+    try:
+        cls.name
+        return True
+    except AttributeError:
+        return False
 
-    def apply(self, args):
-        return sum(args)
+EXCLUDE_BUILTINS = [FunctionBuiltin, VariableBuiltin]
+
+def get_all_builtins():
+    to_visit = [Builtin]
+    while len(to_visit) > 0:
+        my_class = to_visit.pop()
+        if hasattr(my_class, 'name'):
+            yield my_class
+        for builtin_class in my_class.__subclasses__():
+            to_visit.append(builtin_class)
 
 def evaluate(ast, indentation='  '):
 
@@ -112,11 +136,15 @@ def evaluate(ast, indentation='  '):
         if isinstance(e, ConstExpression):
             return e.value
         elif isinstance(e, VarRefExpression):
-            return env.lookup(e.name)
+            value = env.lookup(e.name)
+            if isinstance(value, VariableBuiltin):
+                return value.get()
+            else:
+                return value
         elif isinstance(e, AppExpression):
             op = eval_code_expr(e.operator, env)
             args = list(eval_code_expr(arg, env) for arg in e.operands)
-            if not hasattr(op, 'apply'):
+            if not isinstance(op, FunctionBuiltin):
                 raise RuntimeError("Could not evaluate Templately expression: result is not applicable.".format(op))
             return op.apply(args)
         else:
@@ -196,7 +224,8 @@ def evaluate(ast, indentation='  '):
             raise TypeError("Could not evaluate statement: unknown statement {}.".format(stmt))
 
     env = Env()
-    for builtin_class in Builtin.__subclasses__():
+    for builtin_class in get_all_builtins():
+        print('adding {}'.format(builtin_class.name))
         env.set(builtin_class.name, builtin_class())
     return eval_statement_list(ast, env)
 

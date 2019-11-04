@@ -1,6 +1,7 @@
 
 import os, sys
 import argparse
+from importlib import import_module
 
 from .scanner import Scanner
 from .parser import Parser
@@ -18,7 +19,9 @@ def main(argv=None):
     sc = Scanner(args.file, contents)
     p = Parser(sc)
     ss = p.parse_all()
-    
+
+    import_module('templaty.builtins')
+
     print(contents)
     print(evaluate(ss))
 
