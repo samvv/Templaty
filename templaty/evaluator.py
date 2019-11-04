@@ -126,7 +126,7 @@ def get_all_builtins():
         for builtin_class in my_class.__subclasses__():
             to_visit.append(builtin_class)
 
-def evaluate(ast, indentation='  '):
+def evaluate(ast, data={}, indentation='  '):
 
     indent_override = 0
     curr_indent = 0
@@ -226,5 +226,7 @@ def evaluate(ast, indentation='  '):
     env = Env()
     for builtin_class in get_all_builtins():
         env.set(builtin_class.name, builtin_class())
+    for name, value in data.items():
+        env.set(name, value)
     return eval_statement_list(ast, env)
 
