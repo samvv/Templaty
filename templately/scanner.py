@@ -242,7 +242,6 @@ class Scanner:
                 self.get_char()
                 c1 = self.get_char()
                 if c1 == '}':
-                    self.get_char()
                     self._mode = TEXT_MODE
                     return Token(CLOSE_STATEMENT_BLOCK, start_pos, self._curr_pos.clone())
                 else:
