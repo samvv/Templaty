@@ -10,28 +10,28 @@ The template syntax was inspired by [Jinja2][1] and should be very easy to pick
 up.
 
 ```
-def sum_all_foos():
+def sum_all_answers():
   {% for i in range(0, 10) %}
-    foo{{i+1}} = 1
+    answer{{i+1}} = {% if i % 2 == 0 %}get_input_from_alice(){% else %}get_input_from_bob(){% endif %}
   {% endfor %}
-  return {% join i in range(0, 10) with ' + ' %}foo{{i+1}}{% endjoin %}
+  return {% join i in range(0, 10) with ' + ' %}answer{{i+1}}{% endjoin %}
 ```
 
 Generates the following code:
 
 ```
-def sum_all_foos():
-  foo1 = 1
-  foo2 = 1
-  foo3 = 1
-  foo4 = 1
-  foo5 = 1
-  foo6 = 1
-  foo7 = 1
-  foo8 = 1
-  foo9 = 1
-  foo10 = 1
-  return foo1 + foo2 + foo3 + foo4 + foo5 + foo6 + foo7 + foo8 + foo9 + foo10
+def sum_all_answers():
+  answer1 = get_input_from_alice()
+  answer2 = get_input_from_bob() 
+  answer3 = get_input_from_alice() 
+  answer4 = get_input_from_bob() 
+  answer5 = get_input_from_alice() 
+  answer6 = get_input_from_bob() 
+  answer7 = get_input_from_alice() 
+  answer8 = get_input_from_bob() 
+  answer9 = get_input_from_alice() 
+  answer10 = get_input_from_bob() 
+  return answer1 + answer2 + answer3 + answer4 + answer5 + answer6 + answer7 + answer8 + answer9 + answer10
 ```
 
 [1]: https://jinja.palletsprojects.com/
