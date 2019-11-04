@@ -10,24 +10,28 @@ The template syntax was inspired by [Jinja2][1] and should be very easy to pick
 up.
 
 ```
-{% for i in range(0, 10)}
-  var foo{{i+1}} = 0;
-{% endfor %}
+def sum_all_foos():
+  {% for i in range(0, 10) %}
+    foo{{i+1}} = 1
+  {% endfor %}
+  return {% join i in range(0, 10) with ' + ' %}foo{{i+1}}{% endjoin %}
 ```
 
 Generates the following code:
 
 ```
-var foo1 = 0;
-var foo2 = 0;
-var foo3 = 0;
-var foo4 = 0;
-var foo5 = 0;
-var foo6 = 0;
-var foo7 = 0;
-var foo8 = 0;
-var foo9 = 0;
-var foo10 = 0;
+def sum_all_foos():
+  foo1 = 1
+  foo2 = 1
+  foo3 = 1
+  foo4 = 1
+  foo5 = 1
+  foo6 = 1
+  foo7 = 1
+  foo8 = 1
+  foo9 = 1
+  foo10 = 1
+  return foo1 + foo2 + foo3 + foo4 + foo5 + foo6 + foo7 + foo8 + foo9 + foo10
 ```
 
 [1]: https://jinja.palletsprojects.com/
