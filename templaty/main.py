@@ -33,8 +33,6 @@ def main(argv=None):
     p = Parser(sc)
     ss = p.parse_all()
 
-    import_module('templaty.builtins')
-
     print(evaluate(ss, data))
 
 

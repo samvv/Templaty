@@ -2,6 +2,7 @@
 from textwrap import indent, dedent
 from datetime import datetime
 import math
+from datetime import datetime
 
 from .ast import *
 
@@ -84,37 +85,6 @@ class Env:
     def fork(self):
         return Env(self)
 
-class Builtin:
-    pass
-
-class FunctionBuiltin(Builtin):
-    pass
-
-class VariableBuiltin(Builtin):
-    pass
-
-def func(builtin_name):
-    def decorate(f):
-        class MyBuiltin(FunctionBuiltin):
-            name = builtin_name
-            def apply(self, args):
-                return f(*args)
-    return decorate
-
-def getter(builtin_name):
-    def decorate(f):
-        class MyBuilting(VariableBuiltin):
-            name = builtin_name
-            def get(self):
-                return f()
-
-def has_class_property(cls, name):
-    try:
-        cls.name
-        return True
-    except AttributeError:
-        return False
-
 def strip_prefix(text, prefix):
     if text.startswith(prefix):
         return text[len(prefix):]
@@ -128,18 +98,17 @@ def count_newlines(text):
             count += 1
     return count
 
-EXCLUDE_BUILTINS = [FunctionBuiltin, VariableBuiltin]
+DEFAULT_BUILTINS = {
+        'range': lambda a, b: range(a, b),
+        '+': lambda a, b: a + b,
+        '-': lambda a, b: a - b,
+        '*': lambda a, b: a * b,
+        '/': lambda a, b: a / b,
+        '%': lambda a, b: a % b,
+        '==': lambda a, b: a == b
+        }
 
-def get_all_builtins():
-    to_visit = [Builtin]
-    while len(to_visit) > 0:
-        my_class = to_visit.pop()
-        if hasattr(my_class, 'name'):
-            yield my_class
-        for builtin_class in my_class.__subclasses__():
-            to_visit.append(builtin_class)
-
-def evaluate(ast, data={}, indentation='  ', filename="#<anonymous>"):
+def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
 
     if isinstance(ast, str):
         from .scanner import Scanner
@@ -156,17 +125,13 @@ def evaluate(ast, data={}, indentation='  ', filename="#<anonymous>"):
         if isinstance(e, ConstExpression):
             return e.value
         elif isinstance(e, VarRefExpression):
-            value = env.lookup(e.name)
-            if isinstance(value, VariableBuiltin):
-                return value.get()
-            else:
-                return value
+            return env.lookup(e.name)
         elif isinstance(e, AppExpression):
             op = eval_code_expr(e.operator, env)
             args = list(eval_code_expr(arg, env) for arg in e.operands)
-            if not isinstance(op, FunctionBuiltin):
+            if not callable(op):
                 raise RuntimeError("Could not evaluate Templately expression: result is not applicable.".format(op))
-            return op.apply(args)
+            return op(*args)
         else:
             raise RuntimeError("Could not evaluate Templately expression: unknown expression {}.".format(e))
 
@@ -259,9 +224,10 @@ def evaluate(ast, data={}, indentation='  ', filename="#<anonymous>"):
     env = Env()
     env.set('True', True)
     env.set('False', False)
-    for builtin_class in get_all_builtins():
-        env.set(builtin_class.name, builtin_class())
-    for name, value in data.items():
+    env.set('now', datetime.now().strftime("%b %d %Y %H:%M:%S"))
+    for name, value in DEFAULT_BUILTINS.items():
+        env.set(name, value)
+    for name, value in ctx.items():
         env.set(name, value)
     return eval_statement_list(ast, env)
 

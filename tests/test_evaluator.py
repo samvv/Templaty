@@ -1,6 +1,5 @@
 
 import templaty
-import templaty.builtins
 
 import unittest
 
