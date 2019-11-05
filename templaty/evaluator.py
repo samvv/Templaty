@@ -3,6 +3,7 @@ from textwrap import indent, dedent
 from datetime import datetime
 import math
 from datetime import datetime
+import re
 
 from .ast import *
 
@@ -99,8 +100,11 @@ def count_newlines(text):
     return count
 
 def to_snake_case(name):
-    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
-    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
+    if '-' in name:
+        return name.replace('-', '_')
+    else:
+        s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+        return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
 DEFAULT_BUILTINS = {
         'range': lambda a, b: range(a, b),
