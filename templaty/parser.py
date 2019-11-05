@@ -214,6 +214,9 @@ class Parser:
                     self._expect_token(CLOSE_STATEMENT_BLOCK)
                     self._statement_stack[-1] = [ENDIF_KEYWORD]
                     alt = list(self.parse_statement_block())
+                    self._expect_token(OPEN_STATEMENT_BLOCK)
+                    self._expect_token(ENDIF_KEYWORD)
+                    self._expect_token(CLOSE_STATEMENT_BLOCK)
                     break
                 elif t2.type == ENDIF_KEYWORD:
                     self._expect_token(CLOSE_STATEMENT_BLOCK)
