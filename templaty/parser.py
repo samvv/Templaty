@@ -196,25 +196,36 @@ class Parser:
         self._expect_token(OPEN_STATEMENT_BLOCK)
         t1 = self.get_token()
         if t1.type == IF_KEYWORD:
-            self._statement_stack.append([ENDIF_KEYWORD, ELSE_KEYWORD])
+            self._statement_stack.append([ENDIF_KEYWORD, ELIF_KEYWORD, ELSE_KEYWORD])
             cond = self.parse_expression()
             self._expect_token(CLOSE_STATEMENT_BLOCK)
-            then = list(self.parse_body_statements())
-            self._expect_token(OPEN_STATEMENT_BLOCK)
-            self._expect_token(ELSE_KEYWORD)
-            self._expect_token(CLOSE_STATEMENT_BLOCK)
-            alt = list(self.parse_body_statements())
-            self._expect_token(OPEN_STATEMENT_BLOCK)
-            self._expect_token(ENDIF_KEYWORD)
-            self._expect_token(CLOSE_STATEMENT_BLOCK)
-            return IfStatement(cond, then, alt)
+            then = list(self.parse_statement_block())
+            cases = [(cond, then)]
+            alt = None
+            while True:
+                self._expect_token(OPEN_STATEMENT_BLOCK)
+                t2 = self.get_token()
+                if t2.type == ELIF_KEYWORD:
+                    cond = self.parse_expression()
+                    self._expect_token(CLOSE_STATEMENT_BLOCK)
+                    then = list(self.parse_statement_block())
+                    cases.append((cond, then))
+                elif t2.type == ELSE_KEYWORD:
+                    self._expect_token(CLOSE_STATEMENT_BLOCK)
+                    self._statement_stack[-1] = [ENDIF_KEYWORD]
+                    alt = list(self.parse_statement_block())
+                    break
+                elif t2.type == ENDIF_KEYWORD:
+                    self._expect_token(CLOSE_STATEMENT_BLOCK)
+                    break
+            return IfStatement(cases, alt)
         elif t1.type == FOR_KEYWORD:
             self._statement_stack.append([ENDFOR_KEYWORD])
             patt = self.parse_pattern()
             self._expect_token(IN_KEYWORD)
             e = self.parse_expression()
             self._expect_token(CLOSE_STATEMENT_BLOCK)
-            body = list(self.parse_body_statements())
+            body = list(self.parse_statement_block())
             self._expect_token(OPEN_STATEMENT_BLOCK)
             self._expect_token(ENDFOR_KEYWORD)
             self._expect_token(CLOSE_STATEMENT_BLOCK)
@@ -227,7 +238,7 @@ class Parser:
             self._expect_token(WITH_KEYWORD)
             sep = self.parse_expression()
             self._expect_token(CLOSE_STATEMENT_BLOCK)
-            body = list(self.parse_body_statements())
+            body = list(self.parse_statement_block())
             self._expect_token(OPEN_STATEMENT_BLOCK)
             self._expect_token(ENDJOIN_KEYWORD)
             self._expect_token(CLOSE_STATEMENT_BLOCK)
@@ -238,7 +249,7 @@ class Parser:
                 expected.extend(self._statement_stack[-1])
             self._raise_parse_error(t1, expected)
 
-    def parse_body_statements(self):
+    def parse_statement_block(self):
         close_tts = self._statement_stack[-1]
         while True:
             t0 = self.peek_token(1)

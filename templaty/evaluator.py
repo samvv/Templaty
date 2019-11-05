@@ -182,12 +182,14 @@ def evaluate(ast, data={}, indentation='  '):
             return stmt.text
 
         elif isinstance(stmt, IfStatement):
-            if eval_code_expr(stmt.condition, env):
-                env2 = env.fork()
-                return eval_statement_list(stmt.consequent, env2)
-            else:
+            for (cond, cons) in stmt.cases:
+                if eval_code_expr(cond, env):
+                    env2 = env.fork()
+                    return eval_statement_list(cons, env2)
+            if stmt.alternative is not None:
                 env2 = env.fork()
                 return eval_statement_list(stmt.alternative, env2)
+            return ''
 
         elif isinstance(stmt, ForInStatement):
             rng = eval_code_expr(stmt.expression, env)

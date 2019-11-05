@@ -51,10 +51,9 @@ class ExpressionStatement(Statement):
 
 class IfStatement(Statement):
 
-    def __init__(self, condition, consequent, alternative):
+    def __init__(self, cases, alternative):
         super().__init__()
-        self.condition = condition
-        self.consequent = consequent
+        self.cases = cases
         self.alternative = alternative
 
 class JoinStatement(Statement):

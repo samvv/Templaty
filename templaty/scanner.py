@@ -42,6 +42,7 @@ WITH_KEYWORD                      = 24
 IF_KEYWORD                        = 25
 ELSE_KEYWORD                      = 26
 ENDIF_KEYWORD                     = 27
+ELIF_KEYWORD                      = 28
 
 OPERATORS = ['+', '-', '*', '**', '/', '//', '%', '@', '<<', '>>', '&', '|', '^', '~', ':=', '<', '>', '<=', '>=', '==', '!=']
 
@@ -68,7 +69,8 @@ KEYWORDS = {
     'with': WITH_KEYWORD,
     'if': IF_KEYWORD,
     'else': ELSE_KEYWORD,
-    'endif': ENDIF_KEYWORD
+    'endif': ENDIF_KEYWORD,
+    'elif': ELIF_KEYWORD,
     }
 
 TEXT_MODE = 0
