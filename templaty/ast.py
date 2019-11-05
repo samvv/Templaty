@@ -56,6 +56,11 @@ class IfStatement(Statement):
         self.cases = cases
         self.alternative = alternative
 
+class CodeBlock(Statement):
+
+    def __init__(self, statements):
+        self.statements = statements
+
 class JoinStatement(Statement):
 
     def __init__(self, pattern, expression, separator, body):

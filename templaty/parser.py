@@ -262,11 +262,24 @@ class Parser:
             else:
                 yield self.parse()
 
+    def parse_code_block(self):
+        stmts = []
+        self._expect_token(OPEN_CODE_BLOCK)
+        while True:
+            t0 = self.peek_token()
+            if t0.type == CLOSE_CODE_BLOCK:
+                self.get_token()
+                break
+            stmts.append(ExpressionStatement(self.parse_expression()))
+        return CodeBlock(stmts)
+
     def parse(self):
         t0 = self.peek_token()
         if t0.type == TEXT:
             self.get_token()
             return TextStatement(self._get_text(t0))
+        elif t0.type == OPEN_CODE_BLOCK:
+            return self.parse_code_block()
         elif t0.type == OPEN_EXPRESSION_BLOCK:
             return self.parse_expression_block()
         elif t0.type == OPEN_STATEMENT_BLOCK:

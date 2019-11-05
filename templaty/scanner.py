@@ -43,6 +43,8 @@ IF_KEYWORD                        = 25
 ELSE_KEYWORD                      = 26
 ENDIF_KEYWORD                     = 27
 ELIF_KEYWORD                      = 28
+OPEN_CODE_BLOCK                   = 29
+CLOSE_CODE_BLOCK                  = 30
 
 OPERATORS = ['+', '-', '*', '**', '/', '//', '%', '@', '<<', '>>', '&', '|', '^', '~', ':=', '<', '>', '<=', '>=', '==', '!=']
 
@@ -276,6 +278,10 @@ class Scanner:
                         self._mode = CODE_MODE
                         self.get_char()
                         return Token(OPEN_STATEMENT_BLOCK, start_pos, self._curr_pos.clone())
+                    elif ch1 == '!':
+                        self._mode = CODE_MODE
+                        self.get_char()
+                        return Token(OPEN_CODE_BLOCK, start_pos, self._curr_pos.clone())
                     else:
                         text += ch0
                 else:
@@ -287,6 +293,15 @@ class Scanner:
             c0 = self.peek_char()
             if c0 == EOF:
                 return Token(END_OF_FILE, self._curr_pos.clone(), self._curr_pos.clone())
+            elif c0 == '!':
+                self.get_char()
+                c1 = self.get_char()
+                if c1 == '=':
+                    return Token(OPERATOR, start_pos, self._curr_pos.clone())
+                elif c1 == '}':
+                    return Token(CLOSE_CODE_BLOCK, start_pos, self._curr_pos.clone())
+                else:
+                    raise ScanError(self._filename, self._curr_pos.clone(), c0)
             elif c0 == '%':
                 self.get_char()
                 c1 = self.get_char()
