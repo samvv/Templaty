@@ -46,6 +46,12 @@ ELIF_KEYWORD                      = 28
 OPEN_CODE_BLOCK                   = 29
 CLOSE_CODE_BLOCK                  = 30
 DOT                               = 31
+NOINDENT_KEYWORD                  = 32
+INDENT_KEYWORD                    = 33
+DEDENT_KEYWORD                    = 34
+ENDNOINDENT_KEYWORD               = 35
+ENDINDENT_KEYWORD                 = 36
+ENDDEDENT_KEYWORD                 = 37
 
 OPERATORS = ['+', '-', '*', '**', '/', '//', '%', '@', '<<', '>>', '&', '|', '^', '~', ':=', '<', '>', '<=', '>=', '==', '!=', '|>']
 
@@ -74,6 +80,12 @@ KEYWORDS = {
     'else': ELSE_KEYWORD,
     'endif': ENDIF_KEYWORD,
     'elif': ELIF_KEYWORD,
+    'noindent': NOINDENT_KEYWORD,
+    'endnoindent': ENDNOINDENT_KEYWORD,
+    'indent': INDENT_KEYWORD,
+    'endindent': ENDINDENT_KEYWORD,
+    'dedent': DEDENT_KEYWORD,
+    'enddedent': ENDDEDENT_KEYWORD,
     }
 
 TEXT_MODE = 0
@@ -128,8 +140,21 @@ def token_type_to_string(tt):
         return "'else'"
     elif tt == ENDIF_KEYWORD:
         return "'endif'"
+    elif tt == 'noindent':
+        return "'noindent'"
+    elif tt == 'indent':
+        return "'indent'"
+    elif tt == 'dedent':
+        return "'dedent'"
+    elif tt == 'endnoindent':
+        return "'endnoindent'"
+    elif tt == 'endindent':
+        return "'endindent'"
+    elif tt == 'enddedent':
+        return "'enddedent'"
 
 class Position:
+
 
     def __init__(self, offset=0, line=1, column=1):
         self.offset = offset

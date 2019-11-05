@@ -17,6 +17,7 @@ class Expression(Node):
 class MemberExpression(Expression):
 
     def __init__(self, expression, path):
+        super().__init__()
         self.expression = expression
         self.path = path
 
@@ -65,7 +66,14 @@ class IfStatement(Statement):
 class CodeBlock(Statement):
 
     def __init__(self, statements):
+        super().__init__()
         self.statements = statements
+
+class NoIndentStatement(Statement):
+
+    def __init__(self, body):
+        super().__init__()
+        self.body = body
 
 class JoinStatement(Statement):
 

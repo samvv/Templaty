@@ -162,15 +162,19 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
             out += result
         return out
 
-    def eval_repeat(pattern, rng, body, sep=''):
-        env2 = env.fork()
-        out = ''
-        block_indent = curr_indent
-        is_wrapped = len(body) > 0 \
+    def is_wrapped(body):
+        return len(body) > 0 \
            and isinstance(body[0], TextStatement) \
            and starts_with_newline(body[0].text) \
            and isinstance(body[-1], TextStatement) \
            and ends_with_newline(body[-1].text)
+
+
+    def eval_repeat(pattern, rng, body, sep=''):
+        env2 = env.fork()
+        out = ''
+        block_indent = curr_indent
+        wrapped = is_wrapped(body)
         for i in rng:
             if i > 0: out += sep
             env2.set(pattern.name, i)
@@ -178,14 +182,14 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
             temp_out = ''
             for j, child in enumerate(children):
                 result = eval_statement(child, env2)
-                if j == 0 and is_wrapped: result = remove_first_newline(result)
+                if j == 0 and wrapped: result = remove_first_newline(result)
                 temp_out += result
             if count_newlines(temp_out) > 0:
                 temp_out = indent(dedent(temp_out), block_indent)
                 if i == 0:
                     temp_out = strip_prefix(temp_out, block_indent)
             out += temp_out
-        return remove_last_newline(out) if is_wrapped else out
+        return remove_last_newline(out) if wrapped else out
 
     def eval_statement(stmt, env):
 
@@ -218,6 +222,11 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
                 env2 = env.fork()
                 return eval_statement_list(stmt.alternative, env2)
             return ''
+
+        elif isinstance(stmt, NoIndentStatement):
+            wrapped = is_wrapped(stmt.body)
+            out = dedent(eval_statement_list(stmt.body, env))
+            return remove_first_newline(remove_last_newline(out)) if wrapped else out
 
         elif isinstance(stmt, ForInStatement):
             rng = eval_code_expr(stmt.expression, env)
