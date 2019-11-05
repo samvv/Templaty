@@ -10,7 +10,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='templaty',
-    version='1.1.0',
+    version='1.2.0',
     description='Generate programming code from template files',
     long_description=long_description,
     long_description_content_type='text/markdown',
@@ -18,7 +18,7 @@ setup(
     author='Sam Vervaeck',
     author_email='vervaeck.sam@skynet.be',
     classifiers=[
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'Topic :: Software Development :: Code Generators',
         'License :: OSI Approved :: MIT License',
