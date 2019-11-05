@@ -14,25 +14,51 @@ The template syntax was inspired by [Jinja2][1] and should be very easy to pick
 up.
 
 ```
-def sum_all_answers():
-  {% for i in range(0, 5) %}
-    answer{{i+1}} = {% if i % 2 == 0 %}get_input_from_alice(){% else %}get_input_from_bob(){% endif %}
-  {% endfor %}
-  return {% join i in range(0, 10) with ' + ' %}answer{{i+1}}{% endjoin %}
+def annoying_prompt():
+    {% for i in range(0, 5) %}
+      prompt("Hey, how you're doing?")
+    {% endfor %}
 ```
 
 Generates the following code:
 
 ```python
-def sum_all_answers():
-  answer1 = get_input_from_alice()
-  answer2 = get_input_from_bob() 
-  answer3 = get_input_from_alice() 
-  answer4 = get_input_from_bob() 
-  answer5 = get_input_from_alice() 
-  return answer1 + answer2 + answer3 + answer4 + answer5
+def annoying_prompt():
+    prompt("Hey, how you're doing?")
+    prompt("Hey, how you're doing?")
+    prompt("Hey, how you're doing?")
+    prompt("Hey, how you're doing?")
+    prompt("Hey, how you're doing?")
 ```
 
+What about generating an [identity matrix][3] in C that imposes no runtime cost?
+
+```
+static const int IDENTITY_MATRIX[][] = [
+  {% join i in range(0, 10) with ',' %}
+    [{% join j in range(0, 10) with ',' %}{% if j == i %}1{% else %}0{% endjoin %}]
+  {% endjoin %}
+];
+```
+
+It should look something like this:
+
+```c
+static const int IDENTITY_MATRIX[][] = [
+  [1,0,0,0,0,0,0,0,0,0],
+  [0,1,0,0,0,0,0,0,0,0],
+  [0,0,1,0,0,0,0,0,0,0],
+  [0,0,0,1,0,0,0,0,0,0],
+  [0,0,0,0,1,0,0,0,0,0],
+  [0,0,0,0,0,1,0,0,0,0],
+  [0,0,0,0,0,0,1,0,0,0],
+  [0,0,0,0,0,0,0,1,0,0],
+  [0,0,0,0,0,0,0,0,1,0],
+  [0,0,0,0,0,0,0,0,0,1]
+];
+```
+
+This is just the tip of the iceberg of what Templaty can do!
 
 ## Usage
 
@@ -74,4 +100,4 @@ write better programs.
 
 [1]: https://jinja.palletsprojects.com/
 [2]: https://github.com/samvv/vim-templaty
-
+[3]: https://en.wikipedia.org/wiki/Identity_matrix
