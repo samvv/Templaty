@@ -36,7 +36,7 @@ def sum_all_answers():
 
 ## Usage
 
-Eventually, Templaty will be available on PyPi and you'll be able to issue the following command:
+Templaty is available on PyPi. You can issue the following command to install it:
 
 ```
 pip3 install -U --user templaty
