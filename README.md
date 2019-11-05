@@ -4,9 +4,11 @@ Templaty
 [![Documentation Status](https://readthedocs.org/projects/templaty/badge/?version=latest)](https://templaty.readthedocs.io/en/latest/?badge=latest)
 
 **Templaty** is a code generator written in Python that focuses on generating
-code for programming languages other than HTML. It features fine-grained
+correct and readable code for programming languages. It features fine-grained
 control over whitespacing and indentation and a rich meta-language that allows 
 full control over the code to be generated.
+
+🌈 There now is [a syntax plugin for Vim][2]!
 
 The template syntax was inspired by [Jinja2][1] and should be very easy to pick
 up.
@@ -31,7 +33,6 @@ def sum_all_answers():
   return answer1 + answer2 + answer3 + answer4 + answer5
 ```
 
-🌈 There now is [a syntax plugin for Vim][2]!
 
 ## Usage
 
