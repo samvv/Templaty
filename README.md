@@ -13,7 +13,7 @@ up.
 
 ```
 def sum_all_answers():
-  {% for i in range(0, 10) %}
+  {% for i in range(0, 5) %}
     answer{{i+1}} = {% if i % 2 == 0 %}get_input_from_alice(){% else %}get_input_from_bob(){% endif %}
   {% endfor %}
   return {% join i in range(0, 10) with ' + ' %}answer{{i+1}}{% endjoin %}
@@ -28,15 +28,10 @@ def sum_all_answers():
   answer3 = get_input_from_alice() 
   answer4 = get_input_from_bob() 
   answer5 = get_input_from_alice() 
-  answer6 = get_input_from_bob() 
-  answer7 = get_input_from_alice() 
-  answer8 = get_input_from_bob() 
-  answer9 = get_input_from_alice() 
-  answer10 = get_input_from_bob() 
-  return answer1 + answer2 + answer3 + answer4 + answer5 + answer6 + answer7 + answer8 + answer9 + answer10
+  return answer1 + answer2 + answer3 + answer4 + answer5
 ```
 
-[1]: https://jinja.palletsprojects.com/
+🌈 There now is [a syntax plugin for Vim][2]!
 
 ## Usage
 
@@ -63,8 +58,19 @@ end-users. As such, it has little (if any) security checks. You should never
 run untrusted input using Templaty, only code you wrote yourself or from a
 developer you trust.
 
+### What extension should I use for my template files?
+
+It is recommended to use the `.tply` extension so that syntax plugins like 
+[vim-templaty][2] automatically set up the right syntax highlighting for you.
+
+If your template contains code in another programming language, simply prefix
+the default file extension to `.tply`, e.g. `mytemplate.cc.tply`.
+
 ## License
 
 Templaty is licensed under the MIT license, in the hope it will help developers
 write better programs.
+
+[1]: https://jinja.palletsprojects.com/
+[2]: https://github.com/samvv/vim-templaty
 
