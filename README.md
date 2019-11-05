@@ -21,7 +21,7 @@ def sum_all_answers():
 
 Generates the following code:
 
-```
+```python
 def sum_all_answers():
   answer1 = get_input_from_alice()
   answer2 = get_input_from_bob() 
