@@ -119,7 +119,7 @@ Consider the following template code for a Python program:
       {% if enable_print_foo %}
         foo = get_foo();
         if foo == 2: 
-              print("Foo is two!")
+            print("Foo is two!")
         else:
             print("Foo is not two :(")
       {% endif %}
@@ -163,16 +163,16 @@ following code:
 .. code-block:: none
 
   POINTS = [
-    7,
-    4,
-    9,
-    3,
-    4,
-    8,
-    5,
-    1,
-    1,
-    2
+      7,
+      4,
+      9,
+      3,
+      4,
+      8,
+      5,
+      1,
+      1,
+      2
   ]
 
 Rule 3: Special Statements Override the Default Intentation Level
@@ -189,7 +189,7 @@ can be used to modify or override the auto-inferred indentation level.
     {% noindent %}
       #ifndef FOO
     {% endnoindent %}
-        fprintf(stderr, "Warning: FOO was not defined at compile-time.");
+    fprintf(stderr, "Warning: FOO was not defined at compile-time.");
     {% noindent %}
       #endif // #ifndef FOO
     {% endnoindent %}
