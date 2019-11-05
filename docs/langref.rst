@@ -262,15 +262,61 @@ Templaty contains a growing number of built-in variables to make it easy for
 programmers to write their templates without much hassle. The folllowing is an
 incomplete list of functions and variables that are supported out-of-the-box.
 
+``v |> f``
+
+  A special operator that applies a given function ``f`` to ``v``. 
+
+  This operator allows you to write code such as:
+
+  .. code-block:: none
+
+    'foo_bar' |> snake |> upper
+
+  Which is equivalent to the following code:
+
+  .. code-block:: none
+
+    upper(snake('foo_bar'))
+
+  Note the similarity with Jinja2's *filter* concept, with the difference that
+  Templaty implements it as a regular operator rather than a syntactic extension.
+
+``upper(text)``
+
+  Simply converts the given text to uppercase, using Python's standard behaviour.
+
+``lower(text)``
+
+  Simply converts the given text to lowercase, using Python's standard behaviour.
+
+``snake(name)``
+
+  Converts an identifier to snake-case.
+
+  This function should work on most common use-cases. For more complex ones, you
+  probably should write your own logic.
+
 ``now``
+
   A variable holding the time the generator started, formatted using some default rules.
 
 ``a + b``
+
   Add two expressions to each other.
 
 ``a - b``
+
   Subtract two expressions from one another.
 
+``a * b``
+
+  Multiply two expressions with each other.
+
+``a / b``
+
+  Divide ``a`` by ``b``, returning the result.
+
 ``a % b``
+
   Find the remainder after the division of the two given numbers.
 
