@@ -83,6 +83,25 @@ class Parser:
             self._raise_parse_error(t0, [IDENTIFIER])
         return VarPattern(t0.value)
 
+    def parse_member_expression(self):
+        e = self.parse_prim_expression()
+        path = []
+        while True:
+            t0 = self.peek_token()
+            if t0.type == DOT:
+                self.get_token()
+                t1 = self.get_token()
+                if t1.type != IDENTIFIER:
+                    self._raise_parse_error(t1, [IDENTIFIER])
+                path.append(t1.value)
+            else:
+                break
+        if len(path) == 0:
+            return e
+        else:
+            return MemberExpression(e, path)
+
+
     def parse_func_args(self):
         first = True
         while True:
@@ -111,7 +130,7 @@ class Parser:
         return AppExpression(e, args)
 
     def parse_app_expression(self):
-        e = self.parse_prim_expression()
+        e = self.parse_member_expression()
         t1 = self.peek_token()
         if t1.type == OPEN_PAREN:
             return self.parse_func_app(e)

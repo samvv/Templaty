@@ -45,6 +45,7 @@ ENDIF_KEYWORD                     = 27
 ELIF_KEYWORD                      = 28
 OPEN_CODE_BLOCK                   = 29
 CLOSE_CODE_BLOCK                  = 30
+DOT                               = 31
 
 OPERATORS = ['+', '-', '*', '**', '/', '//', '%', '@', '<<', '>>', '&', '|', '^', '~', ':=', '<', '>', '<=', '>=', '==', '!=']
 
@@ -293,6 +294,9 @@ class Scanner:
             c0 = self.peek_char()
             if c0 == EOF:
                 return Token(END_OF_FILE, self._curr_pos.clone(), self._curr_pos.clone())
+            elif c0 == '.':
+                self.get_char()
+                return Token(DOT, start_pos, self._curr_pos.clone())
             elif c0 == '!':
                 self.get_char()
                 c1 = self.get_char()

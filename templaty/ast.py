@@ -14,6 +14,12 @@ class VarPattern(Pattern):
 class Expression(Node):
     pass
 
+class MemberExpression(Expression):
+
+    def __init__(self, expression, path):
+        self.expression = expression
+        self.path = path
+
 class VarRefExpression(Expression):
 
     def __init__(self, name):

@@ -7,6 +7,23 @@ import unittest
 
 class TestParser(unittest.TestCase):
 
+    def test_empty_code_block(self):
+        sc = Scanner('#<empty_code_block>', "{! !}")
+        p = Parser(sc)
+        s = p.parse()
+        self.assertIsInstance(s, CodeBlock)
+        self.assertEqual(len(s.statements), 0)
+
+    def test_expr_code_block(self):
+        sc = Scanner('#<empty_code_block>', "{! indent() !}")
+        p = Parser(sc)
+        s = p.parse()
+        self.assertIsInstance(s, CodeBlock)
+        self.assertEqual(len(s.statements), 1)
+        s1 = s.statements[0]
+        self.assertIsInstance(s1, ExpressionStatement)
+        self.assertIsInstance(s1.expression, AppExpression)
+
     def test_func_app_no_args(self):
         sc = Scanner('#<func_app_no_args>', "foo()", True)
         p = Parser(sc)
@@ -175,4 +192,32 @@ class TestParser(unittest.TestCase):
         self.assertIsInstance(arg2, AppExpression)
         self.assertEqual(arg2.operands[0].name, 'b')
         self.assertEqual(arg2.operands[1].name, 'c')
+
+    def test_simple_member_access(self):
+        sc = Scanner('#<member_access>', 'foo.bar', True)
+        p = Parser(sc)
+        e = p.parse_expression()
+        self.assertIsInstance(e, MemberExpression)
+        self.assertIsInstance(e.expression, VarRefExpression)
+        self.assertEqual(e.expression.name, 'foo')
+        self.assertEqual(len(e.path), 1)
+        self.assertEqual(e.path[0], 'bar')
+
+    def test_complex_expression(self):
+        sc = Scanner('#<member_access>', '(1 + 2).bar.baz.bax', True)
+        p = Parser(sc)
+        e = p.parse_expression()
+        self.assertIsInstance(e, MemberExpression)
+        self.assertIsInstance(e.expression, AppExpression)
+        self.assertIsInstance(e.expression.operator, VarRefExpression)
+        self.assertEqual(e.expression.operator.name, '+')
+        self.assertEqual(len(e.expression.operands), 2)
+        self.assertIsInstance(e.expression.operands[0], ConstExpression)
+        self.assertEqual(e.expression.operands[0].value, 1)
+        self.assertIsInstance(e.expression.operands[1], ConstExpression)
+        self.assertEqual(e.expression.operands[1].value, 2)
+        self.assertEqual(len(e.path), 3)
+        self.assertEqual(e.path[0], 'bar')
+        self.assertEqual(e.path[1], 'baz')
+        self.assertEqual(e.path[2], 'bax')
 

@@ -38,3 +38,6 @@ class TestEvaluator(unittest.TestCase):
         self.assertEqual(templaty.evaluate("{% if 1 == 2 %}Wrong.{% elif 1 == 3 %}Still wrong.{% endif %}"), "")
         self.assertEqual(templaty.evaluate("{% if 1 == 2 %}Wrong.{% elif 1 == 3 %}Still wrong.{% else %}Right{% endif %}"), "Right")
 
+    def test_member_access(self):
+        self.assertEqual(templaty.evaluate("{{foo.bar.baz}}", {'foo':{'bar':{'baz':42}}}), '42')
+
