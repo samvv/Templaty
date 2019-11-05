@@ -49,24 +49,6 @@ def remove_last_newline(text):
         i -= 1
     return text[0:i+1]
 
-# FIXME support tabs as well
-def get_indentation(text):
-    curr_indent = 0
-    has_chars = False
-    min_indent = math.inf
-    for ch in text:
-        if ch == '\n':
-            if has_chars and curr_indent > 0:
-                min_indent = min(min_indent, curr_indent)
-            curr_indent = 0
-            has_chars = False
-        elif not has_chars:
-            if ch == ' ':
-                curr_indent += 1
-            else:
-                has_chars = True
-    return min_indent if not math.isinf(min_indent) else curr_indent
-
 class Env:
 
     def __init__(self, parent=None):
@@ -133,6 +115,25 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
     curr_indent = ''
     at_blank_line = True
 
+    # FIXME support tabs as well
+    def get_indentation(text):
+        curr_indent = ''
+        has_chars = False
+        min_indent = None
+        for ch in text:
+            if ch == '\n':
+                if has_chars and len(curr_indent) > 0:
+                    if min_indent is None or len(curr_indent) < len(min_indent):
+                        min_indent = curr_indent
+                curr_indent = ''
+                has_chars = False
+            elif not has_chars:
+                if ch == ' ':
+                    curr_indent += ch
+                else:
+                    has_chars = True
+        return min_indent if min_indent is not None else curr_indent
+
     def eval_code_expr(e, env):
         if isinstance(e, ConstExpression):
             return e.value
@@ -175,17 +176,12 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
             env2.set(pattern.name, i)
             children = list(body)
             temp_out = ''
-            smallest_indent = math.inf
             for j, child in enumerate(children):
                 result = eval_statement(child, env2)
-                smallest_indent = min(smallest_indent, get_indentation(result))
                 if j == 0 and is_wrapped: result = remove_first_newline(result)
                 temp_out += result
-            if count_newlines(temp_out) > 0 and not math.isinf(smallest_indent):
-                indent_str = strip_prefix(indentation * max(0, smallest_indent - 1), block_indent)
-                if i > 0 or is_wrapped:
-                    indent_str = block_indent + indent_str
-                temp_out = indent(dedent(temp_out), indent_str)
+            if count_newlines(temp_out) > 0:
+                temp_out = indent(dedent(temp_out), block_indent)
                 if i == 0:
                     temp_out = strip_prefix(temp_out, block_indent)
             out += temp_out
