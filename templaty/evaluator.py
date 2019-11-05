@@ -110,7 +110,10 @@ DEFAULT_BUILTINS = {
         '/': lambda a, b: a / b,
         '%': lambda a, b: a % b,
         '==': lambda a, b: a == b,
-        'to_snake_case': to_snake_case
+        'snake': to_snake_case,
+        'upper': lambda s: s.upper(),
+        'lower': lambda s: s.lower(),
+        '|>': lambda val, f: f(val)
         }
 
 def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
