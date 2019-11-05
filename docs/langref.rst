@@ -31,6 +31,19 @@ template.
 
   /* This file was generated on {{now}} by {{author}}. */
 
+Regular Code
+------------
+
+.. warning:: This feature is currently under development.
+
+At any time, you can write regular Python code using ``{!`` and ``!}``.
+
+.. code-block:: none
+
+  {!
+    my_var = 42
+  !}
+
 Control Flow
 ------------
 
@@ -255,12 +268,13 @@ The above snippet will generate the following code:
                 error("I gave up.")
 
 
-Built-in Variables
-------------------
+Built-in Variables and Functions
+--------------------------------
 
-Templaty contains a growing number of built-in variables to make it easy for
-programmers to write their templates without much hassle. The folllowing is an
-incomplete list of functions and variables that are supported out-of-the-box.
+Templaty contains a growing number of built-in functions and variables to make
+it easy for programmers to write their templates without much hassle. The
+folllowing is an incomplete list of functions and variables that are supported
+out-of-the-box.
 
 ``v |> f``
 
@@ -270,13 +284,13 @@ incomplete list of functions and variables that are supported out-of-the-box.
 
   .. code-block:: none
 
-    'foo_bar' |> snake |> upper
+    'FooBarBaz' |> snake |> upper
 
   Which is equivalent to the following code:
 
   .. code-block:: none
 
-    upper(snake('foo_bar'))
+    upper(snake('FooBarBaz'))
 
   Note the similarity with Jinja2's *filter* concept, with the difference that
   Templaty implements it as a regular operator rather than a syntactic extension.
@@ -295,6 +309,16 @@ incomplete list of functions and variables that are supported out-of-the-box.
 
   This function should work on most common use-cases. For more complex ones, you
   probably should write your own logic.
+
+  .. code-block:: none
+
+    snake('FooBarBaz')
+
+  Output:
+
+  .. code-block:: none
+
+    FOO_BAR_BAZ
 
 ``now``
 
