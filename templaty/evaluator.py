@@ -257,6 +257,8 @@ def evaluate(ast, data={}, indentation='  ', filename="#<anonymous>"):
             raise TypeError("Could not evaluate statement: unknown statement {}.".format(stmt))
 
     env = Env()
+    env.set('True', True)
+    env.set('False', False)
     for builtin_class in get_all_builtins():
         env.set(builtin_class.name, builtin_class())
     for name, value in data.items():
