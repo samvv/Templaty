@@ -41,3 +41,6 @@ class TestEvaluator(unittest.TestCase):
     def test_member_access(self):
         self.assertEqual(templaty.evaluate("{{foo.bar.baz}}", {'foo':{'bar':{'baz':42}}}), '42')
 
+    def test_chain_operator(self):
+        self.assertEqual(templaty.evaluate("{{'foo-bar' |> snake |> upper}}"), 'FOO_BAR')
+
