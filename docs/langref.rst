@@ -73,6 +73,31 @@ Templates for code generation wouldn't be particularly useful if we couldn't
 use them to auto-generate repetitive code. The ``for``-statement is one of the
 simplest methods for generating (possibly huge) amounts of code.
 
+.. code-block:: none
+
+  IDENTITY_MATRIX = [
+      {% join i in range(0, 10) with ',' %}
+        [{% join j in range(0, 10) with ',' %}{% if j == i %}1{% else %}0{% endjoin %}]
+      {% endjoin %}
+  ]
+
+Generates the following code:
+
+.. code-block:: python
+
+  IDENTITY_MATRIX = [
+      [1,0,0,0,0,0,0,0,0,0],
+      [0,1,0,0,0,0,0,0,0,0],
+      [0,0,1,0,0,0,0,0,0,0],
+      [0,0,0,1,0,0,0,0,0,0],
+      [0,0,0,0,1,0,0,0,0,0],
+      [0,0,0,0,0,1,0,0,0,0],
+      [0,0,0,0,0,0,1,0,0,0],
+      [0,0,0,0,0,0,0,1,0,0],
+      [0,0,0,0,0,0,0,0,1,0],
+      [0,0,0,0,0,0,0,0,0,1]
+  ]
+
 Indentation Control
 -------------------
 
