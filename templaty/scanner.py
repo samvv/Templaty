@@ -5,10 +5,10 @@ def is_space(ch):
     return ch == '\t' or ch == '\n' or ch == '\r' or ch == ' '
 
 def is_id_start(ch):
-    return ch != EOF and re.match(r'^[a-zA-Z]$', ch) is not None
+    return ch != EOF and re.match(r'^[a-zA-Z_]$', ch) is not None
 
 def is_id_part(ch):
-    return ch != EOF and re.match(r'^[a-zA-Z0-9]$', ch) is not None
+    return ch != EOF and re.match(r'^[a-zA-Z0-9_]$', ch) is not None
 
 def is_digit(ch):
     return ch != EOF and re.match(r'^[0-9]$', ch) is not None
