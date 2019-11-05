@@ -1,8 +1,0 @@
-#
-# Generated on {{now}}
-#
-def sum_all_foos():
-  {% for i in range(0, 10) %}
-    foo{{i+1}} = 1
-  {% endfor %}
-  return {% join i in range(0, 10) with ' + ' %}foo{{i+1}}{% endjoin %}
