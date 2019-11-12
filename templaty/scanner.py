@@ -155,7 +155,6 @@ def token_type_to_string(tt):
 
 class Position:
 
-
     def __init__(self, offset=0, line=1, column=1):
         self.offset = offset
         self.line = line
@@ -163,6 +162,15 @@ class Position:
 
     def clone(self):
         return Position(self.offset, self.line, self.column)
+
+    def advance(self, text):
+        for ch in text:
+            if ch == '\n':
+                self.line += 1
+                self.column = 0
+            else:
+                self.column += 1
+            self.offset += 1
 
 class Token:
 

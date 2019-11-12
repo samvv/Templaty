@@ -15,7 +15,7 @@ class TestParser(unittest.TestCase):
         self.assertEqual(len(s.statements), 0)
 
     def test_expr_code_block(self):
-        sc = Scanner('#<empty_code_block>', "{! indent() !}")
+        sc = Scanner('#<empty_code_block>', "{! foo() !}")
         p = Parser(sc)
         s = p.parse()
         self.assertIsInstance(s, CodeBlock)
@@ -23,6 +23,12 @@ class TestParser(unittest.TestCase):
         s1 = s.statements[0]
         self.assertIsInstance(s1, ExpressionStatement)
         self.assertIsInstance(s1.expression, AppExpression)
+
+    def test_text_after_expr(self):
+        sc = Scanner('#<text_after_expr>', 'The {{foo}} is cool!')
+        p = Parser(sc)
+        ast = list(p.parse_all())
+        self.assertEqual(ast[2].text, ' is cool!')
 
     def test_func_app_no_args(self):
         sc = Scanner('#<func_app_no_args>', "foo()", True)

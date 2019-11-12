@@ -4,6 +4,7 @@ import argparse
 from importlib import import_module
 import json
 
+from .ast import set_all_parents
 from .scanner import Scanner
 from .parser import Parser
 from .evaluator import evaluate
@@ -31,8 +32,10 @@ def main(argv=None):
 
     sc = Scanner(args.file, contents)
     p = Parser(sc)
-    ss = p.parse_all()
+    ss = list(p.parse_all())
+    for s in ss:
+        set_all_parents(s)
 
-    print(evaluate(ss, data))
+    print(evaluate(ss, data, filename=args.file))
 
 

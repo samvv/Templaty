@@ -1,6 +1,5 @@
 
 import templaty
-
 import unittest
 
 INDENT_TEXT = """
@@ -24,6 +23,26 @@ class TestEvaluator(unittest.TestCase):
     def test_simple_for_in_range_indented_wrapped(self):
         self.assertEqual(templaty.evaluate("  {% for i in range(0, 3) %}\n    {{i}}\n  {% endfor %}\n"), "  0\n  1\n  2\n")
 
+    def test_simple_for_in_range_indented_wrapped2(self):
+        self.assertEqual(templaty.evaluate("""
+    {% for i in range(1, 4) %}
+        outer {{i}}!
+            {% for j in range(1, 3) %}
+                inner {{j}} ...
+            {% endfor %}
+    {% endfor %}
+"""), """
+    outer 1!
+        inner 1 ...
+        inner 2 ...
+    outer 2!
+        inner 1 ...
+        inner 2 ...
+    outer 3!
+        inner 1 ...
+        inner 2 ...
+""")
+
     def test_simple_join(self):
         self.assertEqual(templaty.evaluate("{% join i in range(0, 3) with ',' %}{{i}}{% endjoin %}"), "0,1,2")
 
@@ -44,3 +63,137 @@ class TestEvaluator(unittest.TestCase):
     def test_chain_operator(self):
         self.assertEqual(templaty.evaluate("{{'foo-bar' |> snake |> upper}}"), 'FOO_BAR')
 
+    def test_nested_for_in(self):
+        actual = templaty.evaluate("""
+{% for i in range(0, 5) %}
+  iteration {{i}} ..
+    {% for j in range(0, 2) %}
+      << start 1.{{j}} >>
+        {% for k in range(0, 3) %}
+          << {{k}} >>
+        {% endfor %}
+      << end 1.{{i}} >>
+    {% endfor %}
+    {% for j in range(0, 2) %}
+      << start 2.{{j}} >>
+        {% for k in range(0, 3) %}
+          << {{k}} >>
+        {% endfor %}
+      << end 2.{{i}} >>
+    {% endfor %}
+  iteration {{i}} done.
+{% endfor %}
+""")
+        expected = """
+iteration 0 ..
+  << start 1.0 >>
+    << 0 >>
+    << 1 >>
+    << 2 >>
+  << end 1.0 >>
+  << start 1.1 >>
+    << 0 >>
+    << 1 >>
+    << 2 >>
+  << end 1.0 >>
+  << start 2.0 >>
+    << 0 >>
+    << 1 >>
+    << 2 >>
+  << end 2.0 >>
+  << start 2.1 >>
+    << 0 >>
+    << 1 >>
+    << 2 >>
+  << end 2.0 >>
+iteration 0 done.
+iteration 1 ..
+  << start 1.0 >>
+    << 0 >>
+    << 1 >>
+    << 2 >>
+  << end 1.1 >>
+  << start 1.1 >>
+    << 0 >>
+    << 1 >>
+    << 2 >>
+  << end 1.1 >>
+  << start 2.0 >>
+    << 0 >>
+    << 1 >>
+    << 2 >>
+  << end 2.1 >>
+  << start 2.1 >>
+    << 0 >>
+    << 1 >>
+    << 2 >>
+  << end 2.1 >>
+iteration 1 done.
+iteration 2 ..
+  << start 1.0 >>
+    << 0 >>
+    << 1 >>
+    << 2 >>
+  << end 1.2 >>
+  << start 1.1 >>
+    << 0 >>
+    << 1 >>
+    << 2 >>
+  << end 1.2 >>
+  << start 2.0 >>
+    << 0 >>
+    << 1 >>
+    << 2 >>
+  << end 2.2 >>
+  << start 2.1 >>
+    << 0 >>
+    << 1 >>
+    << 2 >>
+  << end 2.2 >>
+iteration 2 done.
+iteration 3 ..
+  << start 1.0 >>
+    << 0 >>
+    << 1 >>
+    << 2 >>
+  << end 1.3 >>
+  << start 1.1 >>
+    << 0 >>
+    << 1 >>
+    << 2 >>
+  << end 1.3 >>
+  << start 2.0 >>
+    << 0 >>
+    << 1 >>
+    << 2 >>
+  << end 2.3 >>
+  << start 2.1 >>
+    << 0 >>
+    << 1 >>
+    << 2 >>
+  << end 2.3 >>
+iteration 3 done.
+iteration 4 ..
+  << start 1.0 >>
+    << 0 >>
+    << 1 >>
+    << 2 >>
+  << end 1.4 >>
+  << start 1.1 >>
+    << 0 >>
+    << 1 >>
+    << 2 >>
+  << end 1.4 >>
+  << start 2.0 >>
+    << 0 >>
+    << 1 >>
+    << 2 >>
+  << end 2.4 >>
+  << start 2.1 >>
+    << 0 >>
+    << 1 >>
+    << 2 >>
+  << end 2.4 >>
+iteration 4 done.
+""" 
+        self.assertEqual(actual, expected)
