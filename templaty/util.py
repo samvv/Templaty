@@ -37,21 +37,25 @@ def remove_first_newline(text):
         if ch == '\n':
             i += 1
             break
-        if not (ch == ' ' or ch == '\t'):
-            return
+        if not is_blank(ch):
+            return text
+        i += 1
+    while i < len(text) and is_blank(text[i]):
         i += 1
     return text[i:]
 
 def remove_last_newline(text):
-    i = len(text)-1
-    while i >= 0:
-        ch = text[i]
+    i = 0
+    while i < len(text):
+        ch = text[len(text)-i]
         if ch == '\n':
             i -= 1
             break
-        if not (ch == ' ' or ch == '\t'):
-            return
+        if not is_blank(ch):
+            return text
         i -= 1
+    while i < len(text) and is_blank(text[len(text)-i]):
+        i += 1
     return text[0:i+1]
 
 def dedent(text, at_blank_line=True):

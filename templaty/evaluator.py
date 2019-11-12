@@ -1,12 +1,11 @@
 
 from datetime import datetime
-import math
-import re
 import textwrap
+import ast
 
 from .scanner import Position
 from .ast import *
-from .util import get_indentation, preorder, is_blank, starts_with_newline, ends_with_newline
+from .util import get_indentation, preorder, is_blank, starts_with_newline, ends_with_newline, remove_first_newline
 
 class Env:
 
@@ -56,7 +55,7 @@ DEFAULT_BUILTINS = {
 #          i += 1
 #      return text[i:]
 
-def is_wrapped(stmt):
+def is_inner_wrapped(stmt):
     return len(stmt.body) > 0 \
        and isinstance(stmt.body[0], TextStatement) \
        and starts_with_newline(stmt.body[0].text) \
@@ -127,6 +126,7 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
 
     curr_indent = ''
     at_blank_line = True
+    strip_next_newline = False
 
     #  def count_newlines(lines):
     #      count = 0
@@ -203,7 +203,7 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
         env2 = env.fork()
         outer_indent = len(curr_indent)
         inner_indent = get_inner_indentation(stmt, at_blank_line)
-        wrapped = is_wrapped(stmt)
+        wrapped = is_inner_wrapped(stmt)
         for i in range(0, count):
             if i > 0: out += sep
             env2.set(stmt.pattern.name, i + min(rng))
@@ -223,11 +223,17 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
 
     def eval_statement(stmt, env):
 
-        nonlocal curr_indent
+        nonlocal curr_indent, at_blank_line, strip_next_newline
+
+        strip_curr_newline = strip_next_newline
+        strip_next_newline = False
 
         if isinstance(stmt, TextStatement):
             curr_indent = get_indentation_of_last_line(stmt.text)
-            return stmt.text
+            text = stmt.text
+            if strip_curr_newline:
+                text = remove_first_newline(text)
+            return text
 
         elif isinstance(stmt, IfStatement):
             for (cond, cons) in stmt.cases:
@@ -239,11 +245,17 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
                 return eval_statement_list(stmt.alternative, env2)
             return ''
 
+        elif isinstance(stmt, CodeBlock):
+            exec(compile(stmt.module, filename=filename, mode='exec'), global_env._variables, env._variables)
+            strip_next_newline = True
+            return ''
+
         #  elif isinstance(stmt, NoIndentStatement):
+
         #      lines = eval_statement_list(stmt.body, env)
         #      dedent(lines)
         #      override_indent(lines, 0)
-        #      wrapped = is_wrapped(stmt.body)
+        #      wrapped = is_inner_wrapped(stmt.body)
         #      if wrapped and len(lines) > 0:
         #          lines[0].join_previous = True
         #      if wrapped and len(lines) > 0:

@@ -1,5 +1,5 @@
 
-import gast
+import ast
 from typing import List, Optional, Any, Tuple
 
 from .util import BaseNode
@@ -44,7 +44,7 @@ class IfStatement(Statement):
     alternative: Optional[List[Statement]]
 
 class CodeBlock(Statement):
-    module: gast.Module
+    module: ast.Module
 
 class NoIndentStatement(Statement):
     body: List[Statement]

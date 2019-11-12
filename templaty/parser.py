@@ -1,5 +1,6 @@
 
 import textwrap
+import ast
 
 from .scanner import *
 from .ast import *
@@ -299,7 +300,7 @@ class Parser:
         t0 = self.get_token()
         if t0.type != CODE_BLOCK_CONTENT:
             self._raise_parse_error(t0, [CODE_BLOCK_CONTENT])
-        module = gast.parse(textwrap.dedent(t0.value))
+        module = ast.parse(textwrap.dedent(t0.value))
         self._expect_token(CLOSE_CODE_BLOCK)
         return CodeBlock(module)
 
