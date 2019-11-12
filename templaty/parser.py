@@ -1,4 +1,6 @@
 
+import textwrap
+
 from .scanner import *
 from .ast import *
 from .util import *
@@ -64,19 +66,20 @@ class Parser:
 
     def __init__(self, scanner):
         self._scanner = scanner
+        self._token_stream = scanner.scan()
         self._token_buffer = []
         self._statement_stack = []
 
     def peek_token(self, count=1):
         while len(self._token_buffer) < count:
-            t0 = self._scanner.scan()
+            t0 = next(self._token_stream)
             self._token_buffer.append(t0)
         return self._token_buffer[count-1]
 
     def get_token(self):
         if len(self._token_buffer) > 0:
             return self._token_buffer.pop(0)
-        return self._scanner.scan()
+        return next(self._token_stream)
 
     def parse_pattern(self):
         t0 = self.get_token()
@@ -293,13 +296,12 @@ class Parser:
     def parse_code_block(self):
         stmts = []
         self._expect_token(OPEN_CODE_BLOCK)
-        while True:
-            t0 = self.peek_token()
-            if t0.type == CLOSE_CODE_BLOCK:
-                self.get_token()
-                break
-            stmts.append(ExpressionStatement(self.parse_expression()))
-        return CodeBlock(stmts)
+        t0 = self.get_token()
+        if t0.type != CODE_BLOCK_CONTENT:
+            self._raise_parse_error(t0, [CODE_BLOCK_CONTENT])
+        module = gast.parse(textwrap.dedent(t0.value))
+        self._expect_token(CLOSE_CODE_BLOCK)
+        return CodeBlock(module)
 
     def parse(self):
         t0 = self.peek_token()

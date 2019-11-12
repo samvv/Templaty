@@ -12,17 +12,14 @@ class TestParser(unittest.TestCase):
         p = Parser(sc)
         s = p.parse()
         self.assertIsInstance(s, CodeBlock)
-        self.assertEqual(len(s.statements), 0)
+        self.assertEqual(len(s.module.body), 0)
 
     def test_expr_code_block(self):
         sc = Scanner('#<empty_code_block>', "{! foo() !}")
         p = Parser(sc)
         s = p.parse()
         self.assertIsInstance(s, CodeBlock)
-        self.assertEqual(len(s.statements), 1)
-        s1 = s.statements[0]
-        self.assertIsInstance(s1, ExpressionStatement)
-        self.assertIsInstance(s1.expression, AppExpression)
+        self.assertEqual(len(s.module.body), 1)
 
     def test_text_after_expr(self):
         sc = Scanner('#<text_after_expr>', 'The {{foo}} is cool!')

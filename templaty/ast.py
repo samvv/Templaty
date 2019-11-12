@@ -44,7 +44,7 @@ class IfStatement(Statement):
     alternative: Optional[List[Statement]]
 
 class CodeBlock(Statement):
-    statements: List[gast.AST]
+    module: gast.Module
 
 class NoIndentStatement(Statement):
     body: List[Statement]
