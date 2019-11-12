@@ -29,7 +29,7 @@ setup(
     keywords='template code-generator c++ c php java python',
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
     python_requires='>=3.5, <4',
-    install_requires=[],
+    install_requires=['gast'],
     extras_require={
         'dev': ['check-manifest'],
         'test': ['coverage'],
