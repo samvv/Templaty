@@ -25,10 +25,25 @@ from .util import is_blank, peek, peekable
 class Line:
 
 
-    def __init__(self, text, join_with_next=False, indent_override=True):
+    def __init__(self, text, join_with_next=False, indent_override=None):
         self.indent_override = indent_override
         self.join_with_next = join_with_next
         self.text = text
+
+
+    def __str__(self):
+        out = self.text
+        if self.indent_override is not None:
+            i = 0
+            while i < len(out) and is_blank(out[i]):
+                i += 1
+            if i > self.indent_override:
+                out = out[i - self.indent_override:]
+            else:
+                out = ' ' * (self.indent_override - i) + out
+        if not self.join_with_next:
+            out += '\n'
+        return out
 
 
     def clone(self):
@@ -81,10 +96,12 @@ class Lines:
     def __str__(self):
         out = ''
         for line in self._lines:
-            out += line.text
-            if not line.join_with_next:
-                out += '\n'
+            out += str(line)
         return out
+
+
+    def __iter__(self):
+        return iter(self._lines)
 
 
     def clone(self):

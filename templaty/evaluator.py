@@ -207,15 +207,17 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
         elif isinstance(stmt, CodeBlock):
             exec(compile(stmt.module, filename=filename, mode='exec'), global_env._variables, env._variables)
             strip_next_newline = True
+            return Lines()
 
         elif isinstance(stmt, NoIndentStatement):
-            strip_next_newline = True
+            outer_indent = len(curr_indent)
             result = eval_statement_list(stmt.body, env)
-            result.dedent()
+            #  result.dedent()
+            del result[0:outer_indent+1]
             for line in result:
                 if line.indent_override is None:
                     line.indent_override = 0
-                    line
+            strip_next_newline = True
             return result
 
         elif isinstance(stmt, ExpressionStatement):
