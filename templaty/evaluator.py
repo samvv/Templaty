@@ -17,7 +17,8 @@ import ast
 
 from .scanner import Position
 from .ast import *
-from .util import get_indentation, preorder, is_blank, starts_with_newline, ends_with_newline, remove_first_newline, to_snake_case
+from .util import get_indentation, preorder, is_blank, starts_with_newline, ends_with_newline, remove_first_newline, to_snake_case, is_empty, escape
+
 from .lines import *
 
 class Env:
@@ -61,6 +62,8 @@ DEFAULT_BUILTINS = {
         }
 
 def is_inner_wrapped(stmt):
+    if not hasattr(stmt, 'body'):
+        return False
     return len(stmt.body) > 0 \
        and isinstance(stmt.body[0], TextStatement) \
        and starts_with_newline(stmt.body[0].text) \
@@ -85,13 +88,30 @@ def get_inner_indentation(node, at_blank_line=True):
                     if not at_blank_line and (min_indent is None or curr_indent < min_indent):
                         min_indent = curr_indent
             if min_indent is None:
-                min_indent = 0
+                min_indent = curr_indent
             return min_indent
         else:
             at_blank_line = False
 
-INDENT_SET = 0
-INDENT_ADD = 1
+def remove_first_indent(lines):
+
+    k = 0
+
+    def advance_while(pred):
+        nonlocal k
+        for line in lines:
+            text = str(line)
+            while k < len(text):
+                if not pred(text[k]):
+                    return
+                k += 1
+
+    advance_while(is_blank)
+    if lines[k] == '\n':
+        k += 1
+        advance_while(is_blank)
+
+    del lines[0:k]
 
 def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
 
@@ -100,11 +120,11 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
         from .parser import Parser
         sc = Scanner(filename, ast)
         p = Parser(sc)
-        ast = p.parse_all()
+        ast = list(p.parse_all())
 
     curr_indent = ''
     at_blank_line = True
-    strip_next_newline = False
+    out = Lines()
 
     def eval_code_expr(e, env):
         if isinstance(e, ConstExpression):
@@ -126,16 +146,26 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
             raise RuntimeError("Could not evaluate Templately expression: unknown expression {}.".format(e))
 
     def eval_statement_list(stmts, env):
-        out = Lines()
-        for stmt in stmts:
-            out += eval_statement(stmt, env)
-        return out
+        result = Lines()
+        i = 0
+        while i < len(stmts):
+            if is_inner_wrapped(stmts[i]) and i < len(stmts)-1:
+                if len(curr_indent) > 0:
+                    del result[-len(curr_indent):]
+            result += eval_statement(stmts[i], env)
+            if is_inner_wrapped(stmts[i]) and i < len(stmts)-1:
+                result_2 = eval_statement(stmts[i+1], env)
+                del result_2[0:1]
+                result += result_2
+                i += 1
+            i += 1
+        return result
 
     def indent_depth(indentation):
         return len(indentation)
 
-    def get_indentation_of_last_line(text):
-        nonlocal at_blank_line
+    def update_locals(text):
+        nonlocal at_blank_line, curr_indent
         last_indent = ''
         has_newline = False
         for ch in reversed(text):
@@ -150,14 +180,12 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
                 at_blank_line = False
         if not has_newline:
             if at_blank_line:
-                return curr_indent + last_indent
-            else:
-                return curr_indent
+                curr_indent = curr_indent + last_indent
         else:
-            return last_indent
+            curr_indent = last_indent
 
     def eval_repeat(stmt, sep, env):
-        out = Lines()
+        result = Lines()
         rng = eval_code_expr(stmt.expression, env)
         count = max(rng) - min(rng) + 1
         env2 = env.fork()
@@ -165,70 +193,79 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
         inner_indent = get_inner_indentation(stmt, at_blank_line)
         wrapped = is_inner_wrapped(stmt)
         for i in range(0, count):
-            if i > 0: out += sep
+            if i > 0: result += sep
             env2.set(stmt.pattern.name, i + min(rng))
-            for j, child in enumerate(stmt.body):
-                result = eval_statement(child, env2)
-                if i == 0 and j == 0 and wrapped:
-                    del result[0:1]
-                if j == len(stmt.body) - 1 and wrapped:
-                    del result[-(outer_indent+1):]
-                out += result
+            iter_result = eval_statement_list(stmt.body, env2)
+            if wrapped:
+                # remove single newline
+                # rest will be removed by dedent()
+                del iter_result[0:1] 
+            result += iter_result
         if wrapped:
-            out.dedent()
-        out.indent(' ' * outer_indent)
-        del out[0:outer_indent]
-        return out
+            result.dedent()
+        result.indent(' ' * outer_indent)
+        return result
+
 
     def eval_statement(stmt, env):
 
-        nonlocal curr_indent, at_blank_line, strip_next_newline
-
-        strip_curr_newline = strip_next_newline
-        strip_next_newline = False
+        nonlocal curr_indent, at_blank_line, out
 
         if isinstance(stmt, TextStatement):
-            curr_indent = get_indentation_of_last_line(stmt.text)
+            update_locals(stmt.text)
             text = stmt.text
-            if strip_curr_newline:
-                text = remove_first_newline(text)
-            return split_lines(text)
+            result = split_lines(text)
+            out += result 
+            return result
 
         elif isinstance(stmt, IfStatement):
             for (cond, cons) in stmt.cases:
                 if eval_code_expr(cond, env):
                     env2 = env.fork()
-                    return eval_statement_list(cons, env2)
+                    result = eval_statement_list(cons, env2)
+                    out += result
+                    return result
             if stmt.alternative is not None:
                 env2 = env.fork()
-                return eval_statement_list(stmt.alternative, env2)
+                result = eval_statement_list(stmt.alternative, env2)
+                out += result
+                return result
             return Lines()
 
         elif isinstance(stmt, CodeBlock):
             exec(compile(stmt.module, filename=filename, mode='exec'), global_env._variables, env._variables)
-            strip_next_newline = True
             return Lines()
 
-        elif isinstance(stmt, NoIndentStatement):
+        elif isinstance(stmt, SetIndentStatement):
             outer_indent = len(curr_indent)
+            inner_indent = get_inner_indentation(stmt)
+            indent_override = eval_code_expr(stmt.level, env)
             result = eval_statement_list(stmt.body, env)
-            #  result.dedent()
-            del result[0:outer_indent+1]
+            if is_inner_wrapped(stmt):
+                del result[-(outer_indent+1):]
+                result.dedent()
+                result.indent(' ' * outer_indent)
             for line in result:
                 if line.indent_override is None:
-                    line.indent_override = 0
-            strip_next_newline = True
+                    line.indent_override = indent_override
+            out += result
             return result
 
         elif isinstance(stmt, ExpressionStatement):
-            return split_lines(str(eval_code_expr(stmt.expression, env)))
+            result = split_lines(str(eval_code_expr(stmt.expression, env)))
+            out += result
+            return result
 
         elif isinstance(stmt, ForInStatement):
-            return eval_repeat(stmt, Lines(), env)
+            result = eval_repeat(stmt, Lines(), env)
+            out += result
+            return result
 
         elif isinstance(stmt, JoinStatement):
             sep = split_lines(str(eval_code_expr(stmt.separator, env)))
-            return eval_repeat(stmt, sep, env)
+            result = eval_repeat(stmt, sep, env)
+            out += result
+            return result
 
         else:
             raise TypeError("Could not evaluate statement: unknown statement {}.".format(stmt))
@@ -242,5 +279,43 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
     for name, value in ctx.items():
         global_env.set(name, value)
 
-    return str(eval_statement_list(ast, global_env))
+    output = ''
+    result = eval_statement_list(ast, global_env)
+    lines = result._lines
+    i = 0
+    while i < len(lines):
+        indent_override = None
+        j = i
+        while j < len(lines) and lines[j].join_with_next:
+            if lines[j].indent_override is not None:
+                indent_override = lines[j].indent_override
+                break
+            j += 1
+        if indent_override is None:
+            output += str(lines[i])
+        else:
+            while i < len(lines):
+                k = 0
+                curr_indent_override = indent_override
+                while k < len(lines[i].text):
+                    ch = lines[i].text[k]
+                    if curr_indent_override == 0:
+                        break
+                    elif is_blank(ch):
+                        curr_indent_override -= 1
+                        output += ch
+                        k += 1
+                    else:
+                        output += ' ' * curr_indent_override
+                        break
+                while k < len(lines[i].text) and is_blank(lines[i].text[k]):
+                    k += 1
+                output += lines[i].text[k:]
+                if not lines[i].join_with_next:
+                    output += '\n'
+                    break
+                i += 1
+        i += 1
+    return output
+
 

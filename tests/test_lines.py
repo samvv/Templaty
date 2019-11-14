@@ -168,21 +168,6 @@ class TestRemoveSlice(TestCase):
         del t8[6:13]
         self.assertEqual(str(t8), 'foo\nba')
 
-class TestSubstring(TestCase):
-
-    def test_joined_lines(self):
-        t = Lines([Line('foo', True), Line('bar', True), Line('bax', True)])
-        self.assertEqual(str(t[0:3]), 'foo')
-        self.assertEqual(str(t[0:4]), 'foob')
-        self.assertEqual(str(t[0:5]), 'fooba')
-        self.assertEqual(str(t[0:6]), 'foobar')
-        self.assertEqual(str(t[0:7]), 'foobarb')
-        self.assertEqual(str(t[0:8]), 'foobarba')
-        self.assertEqual(str(t[0:9]), 'foobarbax')
-        self.assertEqual(str(t[0:10]), 'foobarbax')
-        self.assertEqual(str(t[0:11]), 'foobarbax')
-        self.assertEqual(str(t[0:12]), 'foobarbax')
-
 class TestIndent(TestCase):
 
     def test_simple_multiline(self):

@@ -53,11 +53,11 @@ def get_operator_precedence(name, arity):
     except StopIteration:
         return None
 
-def get_end_token_type(tt):
-    if tt == JOIN_KEYWORD:
-        return ENDJOIN_KEYWORD
-    elif tt == FOR_KEYWORD:
-        return ENDFOR_KEYWORD
+#  def get_end_token_type(tt):
+#      if tt == JOIN_KEYWORD:
+#          return ENDJOIN_KEYWORD
+#      elif tt == FOR_KEYWORD:
+#          return ENDFOR_KEYWORD
 
 class ParseError(RuntimeError):
 
@@ -184,7 +184,7 @@ class Parser:
         elif t0.type == IDENTIFIER:
             return VarRefExpression(t0.value)
         else:
-            self._raise_parse_error(t0, [IDENTIFIER, INTEGER, OPEN_PAREN])
+            self._raise_parse_error(t0, [IDENTIFIER, STRING_LITERAL, INTEGER, OPEN_PAREN])
 
     def parse_binary_operators(self, lhs, min_prec):
         t0 = self.peek_token()
@@ -283,6 +283,15 @@ class Parser:
             self._expect_token(ENDJOIN_KEYWORD)
             self._expect_token(CLOSE_STATEMENT_BLOCK)
             return JoinStatement(patt, e, sep, body)
+        elif t1.type == SETINDENT_KEYWORD:
+            self._statement_stack.append([ENDSETINDENT_KEYWORD])
+            e = self.parse_expression()
+            self._expect_token(CLOSE_STATEMENT_BLOCK)
+            body = list(self.parse_statement_block())
+            self._expect_token(OPEN_STATEMENT_BLOCK)
+            self._expect_token(ENDSETINDENT_KEYWORD)
+            self._expect_token(CLOSE_STATEMENT_BLOCK)
+            return SetIndentStatement(e, body)
         elif t1.type == NOINDENT_KEYWORD:
             self._statement_stack.append([ENDNOINDENT_KEYWORD])
             self._expect_token(CLOSE_STATEMENT_BLOCK)
@@ -290,9 +299,9 @@ class Parser:
             self._expect_token(OPEN_STATEMENT_BLOCK)
             self._expect_token(ENDNOINDENT_KEYWORD)
             self._expect_token(CLOSE_STATEMENT_BLOCK)
-            return NoIndentStatement(body)
+            return SetIndentStatement(ConstExpression(0), body)
         else:
-            expected = [FOR_KEYWORD, JOIN_KEYWORD, IF_KEYWORD]
+            expected = [FOR_KEYWORD, JOIN_KEYWORD, IF_KEYWORD, NOINDENT_KEYWORD, SETINDENT_KEYWORD]
             if len(self._statement_stack) > 0:
                 expected.extend(self._statement_stack[-1])
             self._raise_parse_error(t1, expected)

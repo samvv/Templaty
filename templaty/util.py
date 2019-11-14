@@ -14,38 +14,6 @@
 
 import re
 
-class PeekIterator:
-
-    def __init__(self, generator):
-        self._generator = generator
-        self._buffer = []
-
-    def peek(self, offset=1):
-        while len(self._buffer) < offset:
-            self._buffer.append(next(self._generator))
-        return self._buffer[offset - 1]
-
-    def get(self, offset=1):
-        if offset <= len(self._buffer):
-            keep = self._buffer[offset - 1]
-            del self._buffer[0:offset]
-            return keep
-        return next(self._generator)
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        return self.get()
-
-def peek(iterator, offset=1):
-    return iterator.peek(offset)
-
-def peekable(proc):
-    def wrapped(*args, **kwargs):
-        return PeekIterator(proc(*args, **kwargs))
-    return wrapped
-
 def enum_or(raw_elements):
     elements = list(raw_elements)
     if len(elements) == 1:
@@ -56,6 +24,12 @@ def enum_or(raw_elements):
 def is_blank(text):
     for ch in text:
         if not ch == ' ' and not ch == '\t':
+            return False
+    return True
+
+def is_empty(text):
+    for ch in text:
+        if not is_blank(ch) and not ch == '\n':
             return False
     return True
 
@@ -227,7 +201,7 @@ def is_union_type(ty):
     return hasattr(ty, '__origin__') and ty.__origin__ == typing.Union
 
 def is_none_type(ty):
-    return el_ty == type(None)
+    return ty == type(None)
 
 def flatten_union_type(ty):
     if is_union_type(ty):
@@ -247,7 +221,7 @@ def get_element_type(ty):
         return ty
 
 def is_special_type(ty):
-    return ty == typing.Any
+    return ty == typing.Any or is_none_type(ty)
 
 def get_index_type(ty):
     if is_list_type(ty):
@@ -267,13 +241,9 @@ class BaseNode:
 
     def __init__(self, *args, **kwargs):
         self.parent = None
-        #  self.parent_path = None
-        #  self._prev_node = None
-        #  self._next_node = None
         fields = self.__dict__['_fields'] = dict()
         i = 0
         for name, ty in self.__class__.__annotations__.items():
-            #  if not name.startswith('_'):
             if name in kwargs:
                 value = kwargs[name]
             else:
@@ -288,26 +258,6 @@ class BaseNode:
                     fields[name] = None
                 else:
                     raise TypeError(f"field '{name}' is required but did not receive a value")
-
-    #  def get_prev_node(self, ty=None):
-    #      if ty is None:
-    #          return self._prev_node
-    #      prev_node = self._prev_node
-    #      while prev_node is not None:
-    #          if isinstance(prev_node, ty):
-    #              return prev_node
-    #          prev_node = prev_node._prev_node
-    #      return None
-    #  
-    #  def get_next_node(self, ty=None):
-    #      if ty is None:
-    #          return self._next_node
-    #      next_node = self._next_node
-    #      while next_node is not None:
-    #          if isinstance(next_node, ty):
-    #              return next_node
-    #          next_node = next_node._next_node
-    #      return None
 
     def get_field_names(self):
         return iter(self.__class__.__annotations__.keys())

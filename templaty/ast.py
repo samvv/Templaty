@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import ast
-from typing import List, Optional, Any, Tuple
+from typing import List, Optional, Any, Tuple, Union
 
 from .util import BaseNode
 
@@ -59,7 +59,8 @@ class IfStatement(Statement):
 class CodeBlock(Statement):
     module: ast.Module
 
-class NoIndentStatement(Statement):
+class SetIndentStatement(Statement):
+    level: int
     body: List[Statement]
 
 class JoinStatement(Statement):
