@@ -1,3 +1,50 @@
+# Copyright 2019 Sam Vervaeck
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import re
+
+class PeekIterator:
+
+    def __init__(self, generator):
+        self._generator = generator
+        self._buffer = []
+
+    def peek(self, offset=1):
+        while len(self._buffer) < offset:
+            self._buffer.append(next(self._generator))
+        return self._buffer[offset - 1]
+
+    def get(self, offset=1):
+        if offset <= len(self._buffer):
+            keep = self._buffer[offset - 1]
+            del self._buffer[0:offset]
+            return keep
+        return next(self._generator)
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return self.get()
+
+def peek(iterator, offset=1):
+    return iterator.peek(offset)
+
+def peekable(proc):
+    def wrapped(*args, **kwargs):
+        return PeekIterator(proc(*args, **kwargs))
+    return wrapped
 
 def enum_or(raw_elements):
     elements = list(raw_elements)
@@ -95,7 +142,7 @@ def is_last_line_blank(text):
             return False
     return True
 
-def get_indentation(text, at_blank_line=True):
+def get_indentation(text, at_blank_line=True, default_indent=0):
     min_indent = None
     curr_indent = 0
     for ch in text:
@@ -111,7 +158,7 @@ def get_indentation(text, at_blank_line=True):
             if not at_blank_line and (min_indent is None or curr_indent < min_indent):
                 min_indent = curr_indent
     if min_indent is None:
-        min_indent = 0
+        min_indent = default_indent
     return min_indent
 
 def to_snake_case(name):

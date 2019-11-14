@@ -1,11 +1,24 @@
+# Copyright 2019 Sam Vervaeck
+# 
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 from datetime import datetime
-import textwrap
 import ast
 
 from .scanner import Position
 from .ast import *
-from .util import get_indentation, preorder, is_blank, starts_with_newline, ends_with_newline, remove_first_newline
+from .util import get_indentation, preorder, is_blank, starts_with_newline, ends_with_newline, remove_first_newline, to_snake_case
+from .lines import *
 
 class Env:
 
@@ -47,30 +60,12 @@ DEFAULT_BUILTINS = {
         '|>': lambda val, f: f(val)
         }
 
-#  def remove_first_indentation(text):
-#      i = 0
-#      while i < len(text):
-#          if not is_blank(text[i]):
-#              break
-#          i += 1
-#      return text[i:]
-
 def is_inner_wrapped(stmt):
     return len(stmt.body) > 0 \
        and isinstance(stmt.body[0], TextStatement) \
        and starts_with_newline(stmt.body[0].text) \
        and isinstance(stmt.body[-1], TextStatement) \
        and ends_with_newline(stmt.body[-1].text)
-
-def is_after_blank_line(node):
-    prev_node = node.get_prev_node(TextStatement)
-    if prev_node is not None:
-        for ch in reversed(prev_node.text):
-            if ch == '\n':
-                return True
-            if not is_blank(ch):
-                break
-    return False
 
 def get_inner_indentation(node, at_blank_line=True):
     curr_indent = 0
@@ -95,23 +90,8 @@ def get_inner_indentation(node, at_blank_line=True):
         else:
             at_blank_line = False
 
-    #  at_blank_line = is_after_blank_line(node)
-    #  def visit(node):
-    #      if isinstance(node, TextStatement):
-    #          return get_indentation(node.text, at_blank_line=at_blank_line)
-    #      elif isinstance(node, ForInStatement):
-    #          min_indent = None
-    #          for stmt in node.body:
-    #              stmt_indent = visit(stmt)
-    #              if stmt_indent is not None:
-    #                  if min_indent is None or stmt_indent < min_indent:
-    #                      min_indent = stmt_indent
-    #          if min_indent is None:
-    #              min_indent = 0
-    #          return min_indent
-    #      else:
-    #          raise RuntimeError("Could not get indentation of node {}".format(node))
-    #  return visit(node)
+INDENT_SET = 0
+INDENT_ADD = 1
 
 def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
 
@@ -121,30 +101,10 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
         sc = Scanner(filename, ast)
         p = Parser(sc)
         ast = p.parse_all()
-        #  for node in ast:
-        #      set_all_parents(node)
 
     curr_indent = ''
     at_blank_line = True
     strip_next_newline = False
-
-    #  def count_newlines(lines):
-    #      count = 0
-    #      join_with_prev = False
-    #      for line in lines:
-    #          if not line.join_previous and not join_with_prev:
-    #              count += 1
-    #          join_with_prev = line.join_next
-    #      return count
-
-    #  def get_indentation(text):
-    #      out = ''
-    #      for ch in text:
-    #          if ch == ' ' or ch == '\t':
-    #              out += ch
-    #          else:
-    #              break
-    #      return out
 
     def eval_code_expr(e, env):
         if isinstance(e, ConstExpression):
@@ -166,7 +126,7 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
             raise RuntimeError("Could not evaluate Templately expression: unknown expression {}.".format(e))
 
     def eval_statement_list(stmts, env):
-        out = ''
+        out = Lines()
         for stmt in stmts:
             out += eval_statement(stmt, env)
         return out
@@ -197,7 +157,7 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
             return last_indent
 
     def eval_repeat(stmt, sep, env):
-        out = ''
+        out = Lines()
         rng = eval_code_expr(stmt.expression, env)
         count = max(rng) - min(rng) + 1
         env2 = env.fork()
@@ -210,15 +170,14 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
             for j, child in enumerate(stmt.body):
                 result = eval_statement(child, env2)
                 if i == 0 and j == 0 and wrapped:
-                    result = ' ' * inner_indent + result[inner_indent+1:]
+                    del result[0:1]
                 if j == len(stmt.body) - 1 and wrapped:
-                    result = result[:-(outer_indent+1)]
+                    del result[-(outer_indent+1):]
                 out += result
         if wrapped:
-            out = textwrap.indent(textwrap.dedent(out), ' ' * outer_indent)
-        else:
-            out = textwrap.indent(out, ' ' * outer_indent)
-        out = out[outer_indent:]
+            out.dedent()
+        out.indent(' ' * outer_indent)
+        del out[0:outer_indent]
         return out
 
     def eval_statement(stmt, env):
@@ -233,7 +192,7 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
             text = stmt.text
             if strip_curr_newline:
                 text = remove_first_newline(text)
-            return text
+            return split_lines(text)
 
         elif isinstance(stmt, IfStatement):
             for (cond, cons) in stmt.cases:
@@ -243,33 +202,30 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
             if stmt.alternative is not None:
                 env2 = env.fork()
                 return eval_statement_list(stmt.alternative, env2)
-            return ''
+            return Lines()
 
         elif isinstance(stmt, CodeBlock):
             exec(compile(stmt.module, filename=filename, mode='exec'), global_env._variables, env._variables)
             strip_next_newline = True
-            return ''
 
-        #  elif isinstance(stmt, NoIndentStatement):
-
-        #      lines = eval_statement_list(stmt.body, env)
-        #      dedent(lines)
-        #      override_indent(lines, 0)
-        #      wrapped = is_inner_wrapped(stmt.body)
-        #      if wrapped and len(lines) > 0:
-        #          lines[0].join_previous = True
-        #      if wrapped and len(lines) > 0:
-        #          lines[-1].join_previous = True
-        #      return lines
+        elif isinstance(stmt, NoIndentStatement):
+            strip_next_newline = True
+            result = eval_statement_list(stmt.body, env)
+            result.dedent()
+            for line in result:
+                if line.indent_override is None:
+                    line.indent_override = 0
+                    line
+            return result
 
         elif isinstance(stmt, ExpressionStatement):
-            return str(eval_code_expr(stmt.expression, env))
+            return split_lines(str(eval_code_expr(stmt.expression, env)))
 
         elif isinstance(stmt, ForInStatement):
-            return eval_repeat(stmt, '', env)
+            return eval_repeat(stmt, Lines(), env)
 
         elif isinstance(stmt, JoinStatement):
-            sep = str(eval_code_expr(stmt.separator, env))
+            sep = split_lines(str(eval_code_expr(stmt.separator, env)))
             return eval_repeat(stmt, sep, env)
 
         else:
@@ -284,5 +240,5 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
     for name, value in ctx.items():
         global_env.set(name, value)
 
-    return eval_statement_list(ast, global_env)
+    return str(eval_statement_list(ast, global_env))
 
