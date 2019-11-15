@@ -158,13 +158,15 @@ class Parser:
 
     def parse_app_expression(self):
         e = self.parse_member_expression()
-        t1 = self.peek_token()
-        if t1.type == OPEN_PAREN:
-            return self.parse_func_app(e)
-        elif t1.type == OPEN_BRACKET:
-            return self.parse_arr_expr(e)
-        else:
-            return e
+        while True:
+            t1 = self.peek_token()
+            if t1.type == OPEN_PAREN:
+                e = self.parse_func_app(e)
+            elif t1.type == OPEN_BRACKET:
+                e = self.parse_arr_expr(e)
+            else:
+                break
+        return e
 
     def parse_unary_expression(self):
         heap = []

@@ -247,3 +247,18 @@ class TestParser(unittest.TestCase):
         self.assertIsInstance(e.max, ConstExpression)
         self.assertEqual(e.max.value, 2)
 
+    def test_complex_access(self):
+        sc = Scanner("#<complex_access>", 'foo[1:2][3]', True)
+        p = Parser(sc)
+        e = p.parse_expression()
+        self.assertIsInstance(e, SliceExpression)
+        self.assertIsInstance(e.expression, SliceExpression)
+        self.assertIsInstance(e.expression.expression, VarRefExpression)
+        self.assertEqual(e.expression.expression.name, 'foo')
+        self.assertIsInstance(e.min, ConstExpression)
+        self.assertEqual(e.min.value, 3)
+        self.assertIsInstance(e.expression.min, ConstExpression)
+        self.assertEqual(e.expression.min.value, 1)
+        self.assertIsInstance(e.expression.max, ConstExpression)
+        self.assertEqual(e.expression.max.value, 2)
+
