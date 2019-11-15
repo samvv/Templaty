@@ -101,23 +101,16 @@ class Parser:
             self._raise_parse_error(t0, [IDENTIFIER])
         return VarPattern(t0.value)
 
-    def parse_member_expression(self):
-        e = self.parse_prim_expression()
-        path = []
-        while True:
-            t0 = self.peek_token()
-            if t0.type == DOT:
-                self.get_token()
-                t1 = self.get_token()
-                if t1.type != IDENTIFIER:
-                    self._raise_parse_error(t1, [IDENTIFIER])
-                path.append(t1.value)
-            else:
-                break
-        if len(path) == 0:
-            return e
+    def parse_member_expression(self, e):
+        self._expect_token(DOT)
+        t0 = self.get_token()
+        if t0.type != IDENTIFIER:
+            self._raise_parse_error(t1, [IDENTIFIER])
+        if isinstance(e, MemberExpression):
+            e.path.append(t0.value)
         else:
-            return MemberExpression(e, path)
+            e = MemberExpression(e, [t0.value])
+        return e
 
     def parse_func_args(self):
         first = True
@@ -136,13 +129,13 @@ class Parser:
                     first = False
                 yield self.parse_expression()
 
-    def parse_func_app(self, e):
+    def parse_app_expression(self, e):
         self._expect_token(OPEN_PAREN)
         args = list(self.parse_func_args())
         self._expect_token(CLOSE_PAREN)
         return AppExpression(e, args)
 
-    def parse_arr_expr(self, e):
+    def parse_slice_expression(self, e):
         self._expect_token(OPEN_BRACKET)
         t0 = self.peek_token()
         if t0.type == COLON:
@@ -164,14 +157,16 @@ class Parser:
         else:
             self._raise_parse_error(t1, [COLON, CLOSE_BRACKET])
 
-    def parse_app_expression(self):
-        e = self.parse_member_expression()
+    def parse_chained_expression(self):
+        e = self.parse_prim_expression()
         while True:
             t1 = self.peek_token()
-            if t1.type == OPEN_PAREN:
-                e = self.parse_func_app(e)
+            if t1.type == DOT:
+                e = self.parse_member_expression(e)
+            elif t1.type == OPEN_PAREN:
+                e = self.parse_app_expression(e)
             elif t1.type == OPEN_BRACKET:
-                e = self.parse_arr_expr(e)
+                e = self.parse_slice_expression(e)
             else:
                 break
         return e
@@ -185,7 +180,7 @@ class Parser:
                 heapq.heappush((t0_prec, t0))
             else:
                 break
-        e = self.parse_app_expression()
+        e = self.parse_chained_expression()
         while len(heap) > 0:
             e = AppExpression(VarRefExpression(heappop(heap)[1].value), [e])
         return e
@@ -229,7 +224,7 @@ class Parser:
         return lhs
 
     def parse_expression(self):
-        return self.parse_binary_operators(self.parse_app_expression(), 0)
+        return self.parse_binary_operators(self.parse_chained_expression(), 0)
 
     def parse_expression_block(self):
         self._expect_token(OPEN_EXPRESSION_BLOCK)

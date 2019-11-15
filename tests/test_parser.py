@@ -247,17 +247,26 @@ class TestParser(unittest.TestCase):
         self.assertEqual(e.max.value, 2)
 
     def test_complex_access(self):
-        sc = Scanner("#<complex_access>", 'foo[1:2][3]', True)
+        sc = Scanner("#<complex_access>", 'foo[1:2][3].bar[4]', True)
         p = Parser(sc)
         e = p.parse_expression()
         self.assertIsInstance(e, IndexExpression)
-        self.assertIsInstance(e.expression, SliceExpression)
-        self.assertIsInstance(e.expression.expression, VarRefExpression)
-        self.assertEqual(e.expression.expression.name, 'foo')
         self.assertIsInstance(e.index, ConstExpression)
-        self.assertEqual(e.index.value, 3)
-        self.assertIsInstance(e.expression.min, ConstExpression)
-        self.assertEqual(e.expression.min.value, 1)
-        self.assertIsInstance(e.expression.max, ConstExpression)
-        self.assertEqual(e.expression.max.value, 2)
+        self.assertEqual(e.index.value, 4)
+        e1 = e.expression
+        self.assertIsInstance(e1, MemberExpression)
+        self.assertEqual(e1.path[0], 'bar')
+        e2 = e1.expression
+        self.assertIsInstance(e2, IndexExpression)
+        self.assertIsInstance(e2.index, ConstExpression)
+        self.assertEqual(e2.index.value, 3)
+        e3 = e2.expression
+        self.assertIsInstance(e3, SliceExpression)
+        self.assertIsInstance(e3.min, ConstExpression)
+        self.assertEqual(e3.min.value, 1)
+        self.assertIsInstance(e3.max, ConstExpression)
+        self.assertEqual(e3.max.value, 2)
+        e4 = e3.expression
+        self.assertIsInstance(e4, VarRefExpression)
+        self.assertEqual(e4.name, 'foo')
 
