@@ -1,6 +1,7 @@
 
 import templaty
 import unittest
+from types import SimpleNamespace
 
 class TestEvaluator(unittest.TestCase):
 
@@ -16,7 +17,7 @@ class TestEvaluator(unittest.TestCase):
         self.assertEqual(templaty.evaluate("{% if 1 == 2 %}Wrong.{% elif 1 == 3 %}Still wrong.{% else %}Right{% endif %}"), "Right")
 
     def test_member_access(self):
-        self.assertEqual(templaty.evaluate("{{foo.bar.baz}}", {'foo':{'bar':{'baz':42}}}), '42')
+        self.assertEqual(templaty.evaluate("{{foo.bar.baz}}", {'foo': SimpleNamespace(bar=SimpleNamespace(baz=42)) }), '42')
 
     def test_chain_operator(self):
         self.assertEqual(templaty.evaluate("{{'foo-bar' |> snake |> upper}}"), 'FOO_BAR')

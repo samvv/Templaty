@@ -121,7 +121,7 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
         elif isinstance(e, MemberExpression):
             out = eval_code_expr(e.expression, env)
             for name in e.path:
-                out = out[name]
+                out = getattr(out, name)
             return out
         elif isinstance(e, VarRefExpression):
             return env.lookup(e.name)
