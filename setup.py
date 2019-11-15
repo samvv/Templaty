@@ -10,7 +10,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name='templaty',
-    version='1.3.0',
+    version='1.3.1',
     description='Generate programming code from template files',
     long_description=long_description,
     long_description_content_type='text/markdown',
