@@ -43,12 +43,28 @@ class Line:
 
 
     def __getitem__(self, index):
+
         if isinstance(index, int):
+
+            # FIXME probably should return a line object in order
+            # to be consistent with the slice API
             if index < len(self.text):
                 return self.text[index]
             if index == len(self.text) and not self.join_with_next:
                 return '\n'
             raise IndexError('index out of bounds')
+
+        elif isinstance(index, slice):
+
+            result = Line(self.text[index], self.join_with_next, self.indent_override)
+
+            # if we take a slice that does not include the full right half of
+            # the line, then join_with_next is set to True so that a
+            # hypothetical join() works
+            if index.stop is not None and index.stop <= len(self.text):
+                result.join_with_next = True
+
+            return result
         else:
             raise NotImplementedError("type is not supported")
 
@@ -137,6 +153,42 @@ class Lines:
         else:
             raise NotImplementedError("type is not supported")
 
+
+    def insert_at(self, offset, lines):
+        if len(lines._lines) == 0:
+            return
+        k = offset
+        for i, line in enumerate(self._lines):
+            if k < len(line):
+                del self._lines[i]
+                prefix = line[:k]
+                suffix = line[k:]
+                if len(prefix) > 0:
+                    self._lines.insert(i, prefix)
+                    i += 1
+                for j, line_2 in enumerate(lines._lines):
+                    self._lines.insert(i, line_2)
+                    i += 1
+                if len(suffix) > 0:
+                    self._lines.insert(i, suffix)
+                return
+            else:
+                k -= len(line)
+        if k == 0:
+            self._lines.extend(lines._lines)
+        else:
+            raise IndexError(f"index {offset} out of bounds")
+
+
+    #  def rfind(self, pred):
+    #      offset = len(self)
+    #      for line in reversed(self._lines):
+    #          for ch in reversed(line): 
+    #              if pred(ch):
+    #                  return offset
+    #              else:
+    #                  offset -= 1
+    #      return None
 
     def __delitem__(self, item):
 
@@ -228,8 +280,9 @@ class Lines:
             min_indent = default_indent
         return min_indent
 
-    def dedent(self, at_blank_line=True):
-        min_indent = self.get_indentation(at_blank_line=at_blank_line)
+    def dedent(self, at_blank_line=True, min_indent=None):
+        if min_indent is None:
+            min_indent = self.get_indentation(at_blank_line=at_blank_line)
         for line in self._lines:
             if at_blank_line:
                 i = 0

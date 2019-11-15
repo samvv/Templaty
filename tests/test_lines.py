@@ -168,6 +168,50 @@ class TestRemoveSlice(TestCase):
         del t8[6:13]
         self.assertEqual(str(t8), 'foo\nba')
 
+class TestInsertAt(TestCase):
+
+    def test_no_newline(self):
+        t1 = Lines([Line('foo', True), Line('bar', True), Line('bax', True)])
+        t1.insert_at(0, Lines([Line('tes', True)]))
+        self.assertEqual(str(t1), 'tesfoobarbax')
+        t2 = Lines([Line('foo', True), Line('bar', True), Line('bax', True)])
+        t2.insert_at(1, Lines([Line('bla', True)]))
+        self.assertEqual(str(t2), 'fblaoobarbax')
+        t3 = Lines([Line('foo', True), Line('bar', True), Line('bax', True)])
+        t3.insert_at(2, Lines([Line('bla', True)]))
+        self.assertEqual(str(t3), 'foblaobarbax')
+        t2 = Lines([Line('foo', True), Line('bar', True), Line('bax', True)])
+        t2.insert_at(3, Lines([Line('bla', True)]))
+        self.assertEqual(str(t2), 'fooblabarbax')
+
+    def test_insert_end(self):
+        t1 = Lines([Line('foo', True), Line('bar', True), Line('bax', True)])
+        t1.insert_at(9, Lines([Line('tes', True)]))
+        self.assertEqual(str(t1), 'foobarbaxtes')
+        t2 = Lines([Line('foo', True), Line('bar', True), Line('bax', True)])
+        t2.insert_at(8, Lines([Line('tes', True)]))
+        self.assertEqual(str(t2), 'foobarbatesx')
+        t2 = Lines([Line('foo'), Line('bar'), Line('bax')])
+        t2.insert_at(12, Lines([Line('tes', True)]))
+        self.assertEqual(str(t2), 'foo\nbar\nbax\ntes')
+
+    def test_newline(self):
+        t1 = Lines([Line('foo'), Line('bar'), Line('bax', True)])
+        t1.insert_at(0, Lines([Line('tes', True)]))
+        self.assertEqual(str(t1), 'tesfoo\nbar\nbax')
+        t2 = Lines([Line('foo'), Line('bar'), Line('bax', True)])
+        t2.insert_at(1, Lines([Line('bla', True)]))
+        self.assertEqual(str(t2), 'fblaoo\nbar\nbax')
+        t3 = Lines([Line('foo'), Line('bar'), Line('bax', True)])
+        t3.insert_at(2, Lines([Line('bla', True)]))
+        self.assertEqual(str(t3), 'foblao\nbar\nbax')
+        t2 = Lines([Line('foo'), Line('bar'), Line('bax', True)])
+        t2.insert_at(3, Lines([Line('bla', True)]))
+        self.assertEqual(str(t2), 'foobla\nbar\nbax')
+        t3 = Lines([Line('foo'), Line('bar'), Line('bax', True)])
+        t3.insert_at(4, Lines([Line('bla', True)]))
+        self.assertEqual(str(t3), 'foo\nblabar\nbax')
+
 class TestIndent(TestCase):
 
     def test_simple_multiline(self):

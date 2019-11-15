@@ -1,0 +1,10 @@
+This is just a regular line of text
+{% join i in range(1, 4) with ',' %}
+  {{i}}
+{% endjoin %}
+This is just a regular line of text
+  This is just a regular line of text
+  {% join i in range(1, 4) with ',' %}
+    {{i}}
+  {% endjoin %}
+  This is just a regular line of text
