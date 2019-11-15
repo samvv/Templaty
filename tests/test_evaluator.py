@@ -21,3 +21,11 @@ class TestEvaluator(unittest.TestCase):
     def test_chain_operator(self):
         self.assertEqual(templaty.evaluate("{{'foo-bar' |> snake |> upper}}"), 'FOO_BAR')
 
+    def test_index_expression(self):
+        self.assertEqual(templaty.evaluate("{{foo[1]}}", { 'foo': [1, 2, 3] }), '2')
+
+    def test_slice_expression(self):
+        self.assertEqual(templaty.evaluate("{{foo[1:3][0]}}", { 'foo': [1, 2, 3] }), '2')
+        self.assertEqual(templaty.evaluate("{{foo[1:3][1]}}", { 'foo': [1, 2, 3] }), '3')
+
+

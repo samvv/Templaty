@@ -109,6 +109,15 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
     def eval_code_expr(e, env):
         if isinstance(e, ConstExpression):
             return e.value
+        elif isinstance(e, IndexExpression):
+            val = eval_code_expr(e.expression, env)
+            index = eval_code_expr(e.index, env)
+            return val[index]
+        elif isinstance(e, SliceExpression):
+            val = eval_code_expr(e.expression, env)
+            low = eval_code_expr(e.min, env)
+            high = eval_code_expr(e.max, env)
+            return val[low:high]
         elif isinstance(e, MemberExpression):
             out = eval_code_expr(e.expression, env)
             for name in e.path:
