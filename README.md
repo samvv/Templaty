@@ -95,7 +95,7 @@ the default file extension to `.tply`, e.g. `mytemplate.cc.tply`.
 
 ## License
 
-Templaty is licensed under the MIT license, in the hope it will help developers
+Templaty is licensed under the Apache 2.0 license, in the hope it will help developers
 write better programs.
 
 [1]: https://jinja.palletsprojects.com/
