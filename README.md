@@ -6,7 +6,7 @@ Templaty
 **Templaty** is a code generator written in Python that focuses on generating
 correct and readable code for programming languages. It features fine-grained
 control over whitespacing and indentation and a rich meta-language that allows 
-full control over the code to be generated.
+full control over the end result.
 
 🌈 There now is [a syntax plugin for Vim][2]!
 
