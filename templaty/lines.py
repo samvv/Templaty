@@ -99,7 +99,7 @@ class Lines:
         return out
 
 
-    def __iter__(self):
+    def get_lines(self):
         return iter(self._lines)
 
 

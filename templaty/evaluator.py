@@ -246,7 +246,7 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
                 del result[0:1]
                 del result[-1:]
             result.indent(' ' * outer_indent)
-            for line in result:
+            for line in result.get_lines():
                 if line.indent_override is None:
                     line.indent_override = indent_override
             out += result
@@ -287,11 +287,11 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
 
     while i < len(lines):
 
-        indent_override = None
+        indent_override = lines[i].indent_override
 
         # look ahead to see if this line or the next may contain
         # an indent_override flag
-        j = i
+        j = i + 1
         while j < len(lines) and lines[j].join_with_next:
             if lines[j].indent_override is not None:
                 indent_override = lines[j].indent_override
@@ -324,10 +324,12 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
                         output += ' ' * curr_indent_override
                         break
 
+                # FIXME currently no code requires this
                 # if the line was not long enough and the next line might still
                 # contain indentation, then now is the time to process it
-                if curr_indent_override > 0:
-                    continue
+                #  if curr_indent_override > 0:
+                #      i += 1
+                #      continue
 
                 # skip any characters that are remaining
                 # because they are excess indentation
@@ -342,6 +344,7 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
                     output += '\n'
                     break
 
+                curr_indent_override = indent_override
                 i += 1
 
         i += 1
