@@ -1,0 +1,23 @@
+{# Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque faucibus #}
+{# sollicitudin odio, vel efficitur ligula vulputate eget. Suspendisse potenti. #}
+{# Quisque nec vulputate tortor. Aenean at varius lorem. Sed tortor velit, porta #}
+{# ut elit at, varius dapibus nulla. Suspendisse vel hendrerit velit, ac congue #}
+{# lacus. Donec vel accumsan lectus. Sed nec pulvinar est. Proin finibus tincidunt #}
+{# augue, vel vestibulum felis. Quisque vestibulum augue diam, id convallis erat #}
+{# condimentum a. #}
+Hi there!
+{#
+  Nullam tortor tellus, euismod at facilisis eget, commodo non neque. Nam blandit
+  nisi id ex imperdiet, vulputate dictum lectus dapibus. Sed dapibus condimentum
+  eros a accumsan. Nunc in sodales risus, ac fermentum metus. Mauris vehicula
+  fringilla urna sit amet suscipit. Aliquam faucibus sit amet ipsum vel
+  venenatis. Interdum et malesuada fames ac ante ipsum primis in faucibus. Sed
+  nulla urna, blandit sed nibh eget, fermentum lobortis eros. Aliquam erat
+  volutpat. Nulla at porttitor diam. In vehicula tempus risus, quis pharetra orci
+  rutrum sed. Sed pretium auctor lectus, eu vulputate ligula dapibus non. Aliquam
+  id elit ut ligula interdum porttitor pellentesque at sem. Suspendisse ac
+  commodo dolor, at elementum lectus.
+#}
+Comments are fully removed from the template!
+
+Did you know that you can comments inside lines{# for real! #}?

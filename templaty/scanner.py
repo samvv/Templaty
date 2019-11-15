@@ -333,6 +333,18 @@ class Scanner:
                     self._mode = CODE_BLOCK_MODE
                     self.get_char()
                     return Token(OPEN_CODE_BLOCK, start_pos, self._curr_pos.clone())
+                elif ch1 == '#':
+                    self.get_char()
+                    while True:
+                        ch2 = self.get_char()
+                        if ch2 == '#':
+                            ch3 = self.get_char()
+                            if ch3 == '}':
+                                ch4 = self.peek_char()
+                                if ch4 == '\n':
+                                    self.get_char()
+                                start_pos = self._curr_pos.clone()
+                                break
                 else:
                     text += ch0
             else:
