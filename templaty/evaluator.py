@@ -204,6 +204,8 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
             del result[0:1]
             del result[-1:]
         result.indent(' ' * outer_indent)
+        if not wrapped:
+            del result[0:outer_indent]
         return result
 
 
