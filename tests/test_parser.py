@@ -224,3 +224,26 @@ class TestParser(unittest.TestCase):
         self.assertEqual(e.path[1], 'baz')
         self.assertEqual(e.path[2], 'bax')
 
+    def test_simple_index(self):
+        sc = Scanner("#<simple_index>", 'foo[2]', True)
+        p = Parser(sc)
+        e = p.parse_expression()
+        self.assertIsInstance(e, SliceExpression)
+        self.assertIsInstance(e.expression, VarRefExpression)
+        self.assertEqual(e.expression.name, 'foo')
+        self.assertIsInstance(e.min, ConstExpression)
+        self.assertEqual(e.min.value, 2)
+        self.assertEqual(e.max, None)
+
+    def test_simple_slice(self):
+        sc = Scanner("#<simple_slice>", 'foo[1:2]', True)
+        p = Parser(sc)
+        e = p.parse_expression()
+        self.assertIsInstance(e, SliceExpression)
+        self.assertIsInstance(e.expression, VarRefExpression)
+        self.assertEqual(e.expression.name, 'foo')
+        self.assertIsInstance(e.min, ConstExpression)
+        self.assertEqual(e.min.value, 1)
+        self.assertIsInstance(e.max, ConstExpression)
+        self.assertEqual(e.max.value, 2)
+

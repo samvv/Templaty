@@ -68,12 +68,13 @@ OPEN_CODE_BLOCK                   = 29
 CLOSE_CODE_BLOCK                  = 30
 DOT                               = 31
 NOINDENT_KEYWORD                  = 32
-SETINDENT_KEYWORD                    = 33
+SETINDENT_KEYWORD                 = 33
 DEDENT_KEYWORD                    = 34
 ENDNOINDENT_KEYWORD               = 35
-ENDSETINDENT_KEYWORD                 = 36
+ENDSETINDENT_KEYWORD              = 36
 ENDDEDENT_KEYWORD                 = 37
 CODE_BLOCK_CONTENT                = 38
+COLON                             = 39
 
 OPERATORS = ['+', '-', '*', '**', '/', '//', '%', '@', '<<', '>>', '&', '|', '^', '~', ':=', '<', '>', '<=', '>=', '==', '!=', '|>']
 
@@ -381,6 +382,9 @@ class Scanner:
                 c0 = self.peek_char()
                 if c0 == EOF:
                     yield Token(END_OF_FILE, self._curr_pos.clone(), self._curr_pos.clone())
+                elif c0 == ':':
+                    self.get_char()
+                    yield Token(COLON, start_pos, self._curr_pos.clone())
                 elif c0 == '.':
                     self.get_char()
                     yield Token(DOT, start_pos, self._curr_pos.clone())

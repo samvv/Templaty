@@ -119,7 +119,6 @@ class Parser:
         else:
             return MemberExpression(e, path)
 
-
     def parse_func_args(self):
         first = True
         while True:
@@ -138,14 +137,24 @@ class Parser:
                 yield self.parse_expression()
 
     def parse_func_app(self, e):
-        t0 = self.get_token()
-        if t0.type != OPEN_PAREN:
-            self._raise_parse_error(t0, [OPEN_PAREN])
+        self._expect_token(OPEN_PAREN)
         args = list(self.parse_func_args())
-        t1 = self.get_token()
-        if t1.type != CLOSE_PAREN:
-            self._raise_parse_error(t1, [CLOSE_PAREN])
+        self._expect_token(CLOSE_PAREN)
         return AppExpression(e, args)
+
+    def parse_arr_expr(self, e):
+        self._expect_token(OPEN_BRACKET)
+        e1 = self.parse_expression()
+        t0 = self.peek_token()
+        if t0.type == CLOSE_BRACKET:
+            e2 = None
+        elif t0.type == COLON:
+            self.get_token()
+            e2 = self.parse_expression()
+        else:
+            self._raise_parse_error(t0, [COLON, CLOSE_BRACKET])
+        self._expect_token(CLOSE_BRACKET)
+        return SliceExpression(e, e1, e2)
 
     def parse_app_expression(self):
         e = self.parse_member_expression()

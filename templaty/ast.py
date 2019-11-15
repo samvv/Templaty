@@ -29,6 +29,11 @@ class VarPattern(Pattern):
 class Expression(Node):
     pass
 
+class SliceExpression(Expression):
+    expression: Expression
+    min: Optional[Expression]
+    max: Optional[Expression]
+
 class MemberExpression(Expression):
     expression: Expression
     path: List[str]
