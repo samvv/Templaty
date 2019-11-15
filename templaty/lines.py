@@ -286,14 +286,15 @@ class Lines:
         for line in self._lines:
             if at_blank_line:
                 i = 0
-                while i < len(line.text) and i < min_indent: 
+                while i < len(line.text):
                     if not is_blank(line.text[i]):
                         at_blank_line = False
                         break
                     i += 1
-                if len(line.text) > 0:
-                    del line[0:i]
-            elif not line.join_with_next:
+                to_remove = min(min_indent, i)
+                if to_remove > 0:
+                    del line[0:to_remove]
+            if not line.join_with_next:
                 at_blank_line = True
 
 

@@ -199,6 +199,8 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
             env2.set(stmt.pattern.name, element)
             env2.set('index', i)
             iter_result = eval_statement_list(stmt.body, env2)
+            if is_empty(str(iter_result)):
+                continue
             if wrapped:
                 # remove first newline for i > 0
                 # rest will be removed by dedent()

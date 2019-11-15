@@ -222,3 +222,16 @@ class TestIndent(TestCase):
         t2.indent('  ')
         self.assertEqual(str(t2), '  0\n  1\n  2\n')
 
+
+class TestDedent(TestCase):
+
+    def test_simple_multiline(self):
+        t1 = Lines([Line('  foo'), Line('  bar'), Line('  bax', True)])
+        t1.dedent()
+        self.assertEqual(str(t1), 'foo\nbar\nbax')
+        #  t2 = Lines([Line('0'), Line('1'), Line('2')])
+        #  t2.indent('  ')
+        #  self.assertEqual(str(t2), '  0\n  1\n  2\n')
+        t2 = Lines([Line('  a foo', True), Line('  that is not a bar ', True), Line('  is not a bax', True)])
+        t2.dedent()
+        self.assertEqual(str(t2), 'a foo  that is not a bar   is not a bax')
