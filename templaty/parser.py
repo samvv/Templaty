@@ -144,17 +144,25 @@ class Parser:
 
     def parse_arr_expr(self, e):
         self._expect_token(OPEN_BRACKET)
-        e1 = self.parse_expression()
         t0 = self.peek_token()
-        if t0.type == CLOSE_BRACKET:
-            e2 = None
-        elif t0.type == COLON:
-            self.get_token()
-            e2 = self.parse_expression()
+        if t0.type == COLON:
+            e1 = None
         else:
-            self._raise_parse_error(t0, [COLON, CLOSE_BRACKET])
-        self._expect_token(CLOSE_BRACKET)
-        return SliceExpression(e, e1, e2)
+            e1 = self.parse_expression()
+        t1 = self.get_token()
+        if t1.type == CLOSE_BRACKET:
+            assert(e1 is not None)
+            return IndexExpression(e, e1)
+        elif t1.type == COLON:
+            t2 = self.peek_token()
+            if t2.type == CLOSE_BRACKET:
+                e2 = None
+            else:
+                e2 = self.parse_expression()
+            self._expect_token(CLOSE_BRACKET)
+            return SliceExpression(e, e1, e2)
+        else:
+            self._raise_parse_error(t1, [COLON, CLOSE_BRACKET])
 
     def parse_app_expression(self):
         e = self.parse_member_expression()

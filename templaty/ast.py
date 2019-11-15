@@ -29,6 +29,10 @@ class VarPattern(Pattern):
 class Expression(Node):
     pass
 
+class IndexExpression(Expression):
+    expression: Expression
+    index: Expression
+
 class SliceExpression(Expression):
     expression: Expression
     min: Optional[Expression]
