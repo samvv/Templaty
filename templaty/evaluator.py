@@ -179,15 +179,15 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
 
     def eval_repeat(stmt, sep, env):
         result = Lines()
-        rng = eval_code_expr(stmt.expression, env)
-        count = max(rng) - min(rng) + 1
+        iterable = eval_code_expr(stmt.expression, env)
+        elements = list(iterable)
         env2 = env.fork()
         outer_indent = len(curr_indent)
         inner_indent = get_inner_indentation(stmt, at_blank_line)
         wrapped = is_inner_wrapped(stmt)
-        for i in range(0, count):
+        for i, element in enumerate(elements):
             if i > 0: result += sep
-            env2.set(stmt.pattern.name, i + min(rng))
+            env2.set(stmt.pattern.name, element)
             iter_result = eval_statement_list(stmt.body, env2)
             if wrapped and i > 0:
                 # remove first newline for i > 0
