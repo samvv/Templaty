@@ -1,0 +1,7 @@
+{% join i in range(0, 10) with ',' %}{{i}}{% endjoin %}
+This is just a regular line
+{% join i in range(0, 10) with ',' %}{{i}}{% endjoin %}
+  {% join i in range(0, 10) with ',' %}{{i}}{% endjoin %}
+  {% join i in range(0, 10) with ',' %}{{i}}{% endjoin %}
+  This is just a regular line
+  {% join i in range(0, 10) with ',' %}{{i}}{% endjoin %}
