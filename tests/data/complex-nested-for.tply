@@ -1,0 +1,18 @@
+{% for i in range(0, 5) %}
+  iteration {{i}} ..
+    {% for j in range(0, 2) %}
+      << start 1.{{j}} >>
+        {% for k in range(0, 3) %}
+          << {{k}} >>
+        {% endfor %}
+      << end 1.{{i}} >>
+    {% endfor %}
+    {% for j in range(0, 2) %}
+      << start 2.{{j}} >>
+        {% for k in range(0, 3) %}
+          << {{k}} >>
+        {% endfor %}
+      << end 2.{{i}} >>
+    {% endfor %}
+  iteration {{i}} done.
+{% endfor %}

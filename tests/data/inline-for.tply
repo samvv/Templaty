@@ -1,0 +1,8 @@
+  This is just a regular line
+  {% for i in range(0, 10) %}{{i}}{% endfor %}
+  This is just a regular line
+  {% for i in range(0, 10) %}{{i}}{% endfor %}
+{% for i in range(0, 10) %}{{i}}{% endfor %}
+  {% for i in range(0, 10) %}{{i}}{% endfor %}
+  This is just a regular line
+{% for i in range(0, 10) %}{{i}}{% endfor %}
