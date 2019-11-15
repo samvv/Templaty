@@ -1,0 +1,6 @@
+This is just a regular line
+{% for i in range(0, 5) %}
+{% endfor %}
+This is just a regular line
+{% for i in range(0, 5) %}{% endfor %}
+This is just a regular line

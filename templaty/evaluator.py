@@ -17,7 +17,7 @@ import ast
 
 from .scanner import Position
 from .ast import *
-from .util import get_indentation, preorder, is_blank, starts_with_newline, ends_with_newline, remove_first_newline, to_snake_case, is_empty, escape
+from .util import get_indentation, preorder, is_blank, starts_with_newline, ends_with_newline, is_empty, escape
 
 from .lines import *
 
@@ -93,26 +93,6 @@ def get_inner_indentation(node, at_blank_line=True):
         else:
             at_blank_line = False
 
-def remove_first_indent(lines):
-
-    k = 0
-
-    def advance_while(pred):
-        nonlocal k
-        for line in lines:
-            text = str(line)
-            while k < len(text):
-                if not pred(text[k]):
-                    return
-                k += 1
-
-    advance_while(is_blank)
-    if lines[k] == '\n':
-        k += 1
-        advance_while(is_blank)
-
-    del lines[0:k]
-
 def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
 
     if isinstance(ast, str):
@@ -151,10 +131,16 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
         while i < len(stmts):
             stmt = stmts[i]
             last_indent = len(curr_indent)
+            prev_line_blank = at_blank_line
+            next_line_blank = i == len(stmts)-1 or (isinstance(stmts[i+1], TextStatement) and starts_with_newline(stmts[i+1].text))
             iter_result = eval_statement(stmt, env)
-            if is_inner_wrapped(stmt):
+            if not isinstance(stmt, TextStatement) \
+                    and prev_line_blank \
+                    and next_line_blank:
                 if last_indent > 0:
                     del result[-last_indent:]
+                if len(iter_result) == 0:
+                    del result[-1:]
             result += iter_result
             i += 1
         return result
@@ -204,8 +190,6 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
             del result[0:1]
             del result[-1:]
         result.indent(' ' * outer_indent)
-        if not wrapped:
-            del result[0:outer_indent]
         return result
 
 
