@@ -149,15 +149,13 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
         result = Lines()
         i = 0
         while i < len(stmts):
-            if is_inner_wrapped(stmts[i]) and i < len(stmts)-1:
-                if len(curr_indent) > 0:
-                    del result[-len(curr_indent):]
-            result += eval_statement(stmts[i], env)
-            if is_inner_wrapped(stmts[i]) and i < len(stmts)-1:
-                result_2 = eval_statement(stmts[i+1], env)
-                del result_2[0:1]
-                result += result_2
-                i += 1
+            stmt = stmts[i]
+            last_indent = len(curr_indent)
+            iter_result = eval_statement(stmt, env)
+            if is_inner_wrapped(stmt):
+                if last_indent > 0:
+                    del result[-last_indent:]
+            result += iter_result
             i += 1
         return result
 
@@ -196,13 +194,15 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
             if i > 0: result += sep
             env2.set(stmt.pattern.name, i + min(rng))
             iter_result = eval_statement_list(stmt.body, env2)
-            if wrapped:
-                # remove single newline
+            if wrapped and i > 0:
+                # remove first newline for i > 0
                 # rest will be removed by dedent()
-                del iter_result[0:1] 
+                del iter_result[0:1]
             result += iter_result
         if wrapped:
             result.dedent()
+            del result[0:1]
+            del result[-1:]
         result.indent(' ' * outer_indent)
         return result
 
@@ -242,9 +242,10 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
             indent_override = eval_code_expr(stmt.level, env)
             result = eval_statement_list(stmt.body, env)
             if is_inner_wrapped(stmt):
-                del result[-(outer_indent+1):]
                 result.dedent()
-                result.indent(' ' * outer_indent)
+                del result[0:1]
+                del result[-1:]
+            result.indent(' ' * outer_indent)
             for line in result:
                 if line.indent_override is None:
                     line.indent_override = indent_override
@@ -280,23 +281,37 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
         global_env.set(name, value)
 
     output = ''
-    result = eval_statement_list(ast, global_env)
-    lines = result._lines
+    res = eval_statement_list(ast, global_env)
+    lines = res._lines
     i = 0
+
     while i < len(lines):
+
         indent_override = None
+
+        # look ahead to see if this line or the next may contain
+        # an indent_override flag
         j = i
         while j < len(lines) and lines[j].join_with_next:
             if lines[j].indent_override is not None:
                 indent_override = lines[j].indent_override
                 break
             j += 1
+
+        # no indent_override means there is no
+        # special processing that has to take place
         if indent_override is None:
             output += str(lines[i])
+
         else:
+
+            curr_indent_override = indent_override
+            k = 0
+
             while i < len(lines):
-                k = 0
-                curr_indent_override = indent_override
+
+                # pass through any characters that
+                # are accepted by curr_indent_override
                 while k < len(lines[i].text):
                     ch = lines[i].text[k]
                     if curr_indent_override == 0:
@@ -308,14 +323,29 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
                     else:
                         output += ' ' * curr_indent_override
                         break
+
+                # if the line was not long enough and the next line might still
+                # contain indentation, then now is the time to process it
+                if curr_indent_override > 0:
+                    continue
+
+                # skip any characters that are remaining
+                # because they are excess indentation
                 while k < len(lines[i].text) and is_blank(lines[i].text[k]):
                     k += 1
+
+                # now the real string is added
                 output += lines[i].text[k:]
+
+                # finish off unless we have to append more lines
                 if not lines[i].join_with_next:
                     output += '\n'
                     break
+
                 i += 1
+
         i += 1
+
     return output
 
 

@@ -37,6 +37,7 @@ class Line:
             out += '\n'
         return out
 
+
     def clone(self):
         return Line(self.text, self.join_with_next, self.indent_override)
 
@@ -63,6 +64,9 @@ class Line:
         elif isinstance(item, slice):
             start_offset = 0 if item.start is None else item.start
             end_offset = len(self) if item.stop is None else item.stop
+            assert(0 <= start_offset < len(self))
+            assert(0 <= end_offset <= len(self))
+            assert(start_offset <= end_offset)
             if end_offset > len(self.text):
                 self.join_with_next = True
             self.text = self.text[:start_offset] + self.text[end_offset:]
@@ -234,7 +238,8 @@ class Lines:
                         at_blank_line = False
                         break
                     i += 1
-                del line[0:i]
+                if len(line.text) > 0:
+                    del line[0:i]
             elif not line.join_with_next:
                 at_blank_line = True
 

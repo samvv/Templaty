@@ -43,6 +43,23 @@ class TestEvaluator(unittest.TestCase):
         inner 2 ...
 """)
 
+    def test_noindent(self):
+        self.assertEqual(templaty.evaluate("""
+    You know what?
+{% noindent %}
+    This text is not
+    indented in the
+    slightest.
+{% endnoindent %}
+    That's something!
+"""), """
+    You know what?
+This text is not
+indented in the
+slightest.
+    That's something!
+""")
+
     def test_simple_join(self):
         self.assertEqual(templaty.evaluate("{% join i in range(0, 3) with ',' %}{{i}}{% endjoin %}"), "0,1,2")
 
