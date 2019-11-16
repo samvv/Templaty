@@ -14,42 +14,53 @@
 
 import textwrap
 import ast
+import heapq
 
 from .scanner import *
 from .ast import *
 from .util import *
 
 PRECEDENCE_TABLE = [
-    (2, '<',  1),
-    (2, '<=', 1),
-    (2, '>',  1), 
-    (2, '>=', 1), 
-    (2, '!=', 1),
-    (2, '==', 1),
-    (2, '|',  2),
-    (2, '&',  3),
-    (2, '<<', 4),
-    (2, '>>', 4),
-    (2, '+',  5),
-    (2, '-',  5),
-    (2, '*',  6),
-    (2, '/',  6),
-    (2, '@',  6),
-    (2, '//', 6),
-    (2, '%',  6),
-    (1, '-',  7),
-    (1, '*',  7),
-    (1, '~',  7),
-    (2, '**', 8),
-    (2, '|>', 9)
+    (2, OR_OPERATOR, 0),
+    (2, AND_OPERATOR, 1),
+    (1, NOT_OPERATOR, 2),
+    (2, IN_KEYWORD, 3),
+    (2, LT_OPERATOR, 3),
+    (2, LTE_OPERATOR, 3),
+    (2, GT_OPERATOR, 3), 
+    (2, GTE_OPERATOR, 3), 
+    (2, NEQ_OPERATOR, 3),
+    (2, EQ_OPERATOR, 3),
+    (2, BOR_OPERATOR, 4),
+    (2, BAND_OPERATOR, 5),
+    (2, LSHIFT_OPERATOR, 6),
+    (2, RSHIFT_OPERATOR, 6),
+    (2, ADD_OPERATOR, 7),
+    (2, SUB_OPERATOR, 7),
+    (2, MUL_OPERATOR, 8),
+    (2, DIV_OPERATOR, 8),
+    (1, AT, 8),
+    (2, REM_OPERATOR, 8),
+    (2, MOD_OPERATOR, 8),
+    (1, SUB_OPERATOR, 9),
+    (1, ADD_OPERATOR, 9),
+    (1, BNOT_OPERATOR, 9),
+    (2, EXP_OPERATOR, 10),
+    (2, PIPE_OPERATOR, 11)
     ]
 
 def is_right_assoc(name):
     return name == '**'
 
-def get_operator_precedence(name, arity):
+def is_operator(token_type, arity):
+    for (arity_2, token_type_2, prec) in PRECEDENCE_TABLE:
+        if token_type_2 == token_type and arity_2 == arity:
+            return True
+    return False
+
+def get_operator_precedence(token_type, arity):
     try:
-        return next(prec for (arity2, name2, prec) in PRECEDENCE_TABLE if name == name2 and arity == arity2)
+        return next(prec for (arity_2, token_type_2, prec) in PRECEDENCE_TABLE if token_type == token_type_2 and arity == arity_2)
     except StopIteration:
         return None
 
@@ -175,14 +186,16 @@ class Parser:
         heap = []
         while True:
             t0 = self.peek_token()
-            if t0.type == OPERATOR:
-                t0_prec = get_operator_precedence(t0.value, 1)
-                heapq.heappush((t0_prec, t0))
+            if is_operator(t0.type, 1):
+                print("HERE")
+                self.get_token()
+                t0_prec = get_operator_precedence(t0.type, 1)
+                heapq.heappush(heap, (t0_prec, t0))
             else:
                 break
         e = self.parse_chained_expression()
         while len(heap) > 0:
-            e = AppExpression(VarRefExpression(heappop(heap)[1].value), [e])
+            e = AppExpression(VarRefExpression(heapq.heappop(heap)[1].value), [e])
         return e
 
     def parse_prim_expression(self):
@@ -203,19 +216,19 @@ class Parser:
     def parse_binary_operators(self, lhs, min_prec):
         t0 = self.peek_token()
         while True:
-            if t0.type != OPERATOR:
+            if not is_operator(t0.type, 2):
                 break
             keep = t0
-            keep_prec = get_operator_precedence(keep.value, 2)
+            keep_prec = get_operator_precedence(keep.type, 2)
             if keep_prec is None:
                 break
             self.get_token()
             rhs = self.parse_unary_expression()
             t0 = self.peek_token()
             while True:
-                if not t0.type == OPERATOR:
+                if not is_operator(t0.type, 2):
                     break
-                t0_prec = get_operator_precedence(t0.value, 2)
+                t0_prec = get_operator_precedence(t0.type, 2)
                 if not (t0_prec is not None and (t0_prec > keep_prec or (is_right_assoc(t0.value) and t0_prec == keep_prec))):
                     break
                 rhs = self.parse_binary_operators(rhs, t0_prec)
@@ -224,7 +237,7 @@ class Parser:
         return lhs
 
     def parse_expression(self):
-        return self.parse_binary_operators(self.parse_chained_expression(), 0)
+        return self.parse_binary_operators(self.parse_unary_expression(), 0)
 
     def parse_expression_block(self):
         self._expect_token(OPEN_EXPRESSION_BLOCK)

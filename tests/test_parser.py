@@ -196,6 +196,12 @@ class TestParser(unittest.TestCase):
         self.assertEqual(arg2.operands[0].name, 'b')
         self.assertEqual(arg2.operands[1].name, 'c')
 
+    def test_not_operator(self):
+        sc = Scanner('#<not_operator>', 'not a', True)
+        p = Parser(sc)
+        e = p.parse_expression()
+        self.assertIsInstance(e, AppExpression)
+
     def test_simple_member_access(self):
         sc = Scanner('#<member_access>', 'foo.bar', True)
         p = Parser(sc)

@@ -33,7 +33,10 @@ class Env:
             return self._variables[name]
         if self.parent is not None:
             return self.parent.lookup(name)
-        raise RuntimeError("Could not find '{}' in environment.".format(name))
+        return None
+
+    def __contains__(self, item):
+        return self.lookup(item) is not None
 
     def set(self, name, value):
         self._variables[name] = value
@@ -60,7 +63,8 @@ DEFAULT_BUILTINS = {
         'snake': to_snake_case,
         'upper': lambda s: s.upper(),
         'lower': lambda s: s.lower(),
-        '|>': lambda val, f: f(val)
+        '|>': lambda val, f: f(val),
+        'in': lambda key, val: key in val
         }
 
 def is_inner_wrapped(body):
@@ -145,7 +149,15 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
                 out = getattr(out, name)
             return out
         elif isinstance(e, VarRefExpression):
-            return env.lookup(e.name)
+            value = env.lookup(e.name)
+            if value is not None:
+                return value
+            if e.name == 'globals':
+                return lambda: global_env
+            elif e.name == 'locals':
+                return lambda: env
+            else:
+                raise RuntimeError(f"variable '{name}' is not defined")
         elif isinstance(e, AppExpression):
             op = eval_code_expr(e.operator, env)
             args = list(eval_code_expr(arg, env) for arg in e.operands)

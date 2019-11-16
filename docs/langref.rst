@@ -11,7 +11,7 @@ generates a C program that prints a predefined array of random numbers.
 
 .. code-block:: none
 
-  {% if defined('author') %}
+  {% if 'author' in globals() %}
     // Copyright {{year}} {{author}}
     // All rights reserved
   {% endif %}

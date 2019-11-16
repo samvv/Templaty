@@ -52,7 +52,6 @@ CLOSE_STATEMENT_BLOCK             = 13
 END_OF_FILE                       = 14
 OPEN_PAREN                        = 15
 CLOSE_PAREN                       = 16
-OPERATOR                          = 17
 OPEN_BRACKET                      = 18
 CLOSE_BRACKET                     = 19
 INTEGER                           = 20
@@ -75,20 +74,61 @@ ENDSETINDENT_KEYWORD              = 36
 ENDDEDENT_KEYWORD                 = 37
 CODE_BLOCK_CONTENT                = 38
 COLON                             = 39
+ADD_OPERATOR                      = 40
+SUB_OPERATOR                      = 41
+MUL_OPERATOR                      = 42
+DIV_OPERATOR                      = 43
+EXP_OPERATOR                      = 44
+REM_OPERATOR                      = 45
+MOD_OPERATOR                      = 46
+LSHIFT_OPERATOR                   = 47
+RSHIFT_OPERATOR                   = 48
+BAND_OPERATOR                     = 49
+BOR_OPERATOR                      = 50
+BXOR_OPERATOR                     = 51
+BNOT_OPERATOR                     = 52
+LT_OPERATOR                       = 53
+GT_OPERATOR                       = 54
+LTE_OPERATOR                      = 55
+GTE_OPERATOR                      = 56
+EQ_OPERATOR                       = 57
+NEQ_OPERATOR                      = 58
+PIPE_OPERATOR                     = 59
+AND_OPERATOR                      = 60
+OR_OPERATOR                       = 61
+NOT_OPERATOR                      = 62
+AT                                = 63
 
-OPERATORS = ['+', '-', '*', '**', '/', '//', '%', '@', '<<', '>>', '&', '|', '^', '~', ':=', '<', '>', '<=', '>=', '==', '!=', '|>']
+OPERATORS = {
+    '+': ADD_OPERATOR,
+    '-': SUB_OPERATOR,
+    '*': MUL_OPERATOR,
+    '/': DIV_OPERATOR,
+    '**': EXP_OPERATOR,
+    '//': REM_OPERATOR,
+    '%': MOD_OPERATOR,
+    '<<': LSHIFT_OPERATOR,
+    '>>': RSHIFT_OPERATOR,
+    '&': BAND_OPERATOR,
+    '|': BOR_OPERATOR,
+    '^': BXOR_OPERATOR,
+    '~': BNOT_OPERATOR,
+    '<': LT_OPERATOR,
+    '>': GT_OPERATOR,
+    '<=': LTE_OPERATOR,
+    '>=': GTE_OPERATOR,
+    '|>': PIPE_OPERATOR,
+    '==': EQ_OPERATOR,
+    '!=': NEQ_OPERATOR
+    }
 
 def is_operator_start(ch):
-    for op in OPERATORS:
-        if op[0] == ch:
-            return True
-    return False
+    matcher = re.compile(r"^[+\-*/%<>&|^~=]$")
+    return matcher.match(ch)
 
 def is_operator_part(ch):
-    for op in OPERATORS:
-        if ch in op[1:]:
-            return True
-    return False
+    matcher = re.compile(r"^[*/=>]$")
+    return matcher.match(ch)
 
 KEYWORDS = { 
     'for': FOR_KEYWORD, 
@@ -108,7 +148,13 @@ KEYWORDS = {
     'setindent': SETINDENT_KEYWORD,
     'endsetindent': ENDSETINDENT_KEYWORD,
     'dedent': DEDENT_KEYWORD,
-    'enddedent': ENDDEDENT_KEYWORD,
+    'enddedent': ENDDEDENT_KEYWORD
+    }
+
+NAMED_OPERATORS = {
+    'not': NOT_OPERATOR,
+    'and': AND_OPERATOR,
+    'or': OR_OPERATOR
     }
 
 TEXT_MODE = 0
@@ -172,6 +218,54 @@ def token_type_to_string(tt):
         return "'endnoindent'"
     elif tt == ENDSETINDENT_KEYWORD:
         return "'endsetindent'"
+    elif tt == ADD_OPERATOR:
+        return "'+'"
+    elif tt == SUB_OPERATOR:
+        return "'-'"
+    elif tt == MUL_OPERATOR:
+        return "'*'"
+    elif tt == DIV_OPERATOR:
+        return "'/'"
+    elif tt == EXP_OPERATOR:
+        return "'**'"
+    elif tt == REM_OPERATOR:
+        return "'//'"
+    elif tt == MOD_OPERATOR:
+        return "'%'"
+    elif tt == LSHIFT_OPERATOR:
+        return "'<<'"
+    elif tt == RSHIFT_OPERATOR:
+        return "'>>'"
+    elif tt == BAND_OPERATOR:
+        return "'&'"
+    elif tt == BOR_OPERATOR:
+        return "'|'"
+    elif tt == BXOR_OPERATOR:
+        return "'^'"
+    elif tt == BNOT_OPERATOR:
+        return "'~'"
+    elif tt == LT_OPERATOR:
+        return "'<'"
+    elif tt == GT_OPERATOR:
+        return "'>'"
+    elif tt == LTE_OPERATOR:
+        return "'<='"
+    elif tt == GTE_OPERATOR:
+        return "'>='"
+    elif tt == EQ_OPERATOR:
+        return "'=='"
+    elif tt == NEQ_OPERATOR:
+        return "'!='"
+    elif tt == PIPE_OPERATOR:
+        return "'|>'"
+    elif tt == AND_OPERATOR:
+        return "'and'"
+    elif tt == OR_OPERATOR:
+        return "'or'"
+    elif tt == NOT_OPERATOR:
+        return "'not'"
+    elif tt == AT:
+        return "'@'"
 
 class Position:
 
@@ -392,8 +486,7 @@ class Scanner:
                     self.get_char()
                     c1 = self.get_char()
                     if c1 == '=':
-                        yield Token(OPERATOR, start_pos, self._curr_pos.clone(), '!=')
-
+                        yield Token(NEQ_OPERATOR, start_pos, self._curr_pos.clone(), '!=')
                     elif c1 == '}':
                         yield Token(CLOSE_CODE_BLOCK, start_pos, self._curr_pos.clone())
                     else:
@@ -405,7 +498,7 @@ class Scanner:
                         self._mode = TEXT_MODE
                         yield Token(CLOSE_STATEMENT_BLOCK, start_pos, self._curr_pos.clone())
                     else:
-                        yield Token(OPERATOR, start_pos, self._curr_pos.clone(), '%')
+                        yield Token(MOD_OPERATOR, start_pos, self._curr_pos.clone(), '%')
                 elif c0 == '}':
                     self.get_char()
                     c1 = self.get_char()
@@ -444,10 +537,12 @@ class Scanner:
                         op += self.get_char()
                     if not op in OPERATORS:
                         raise ScanError(self._filename, start_pos, op)
-                    yield Token(OPERATOR, start_pos, self._curr_pos.clone(), op)
+                    yield Token(OPERATORS[op], start_pos, self._curr_pos.clone(), op)
                 elif is_id_start(c0):
                     name = self.scan_raw_identifier()
-                    if name in KEYWORDS:
+                    if name in NAMED_OPERATORS:
+                        yield Token(NAMED_OPERATORS[name], start_pos, self._curr_pos.clone(), name)
+                    elif name in KEYWORDS:
                         yield Token(KEYWORDS[name], start_pos, self._curr_pos.clone(), name)
                     else:
                         yield Token(IDENTIFIER, start_pos, self._curr_pos.clone(), name)

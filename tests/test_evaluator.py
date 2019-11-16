@@ -29,4 +29,7 @@ class TestEvaluator(unittest.TestCase):
         self.assertEqual(templaty.evaluate("{{foo[1:3][0]}}", { 'foo': [1, 2, 3] }), '2')
         self.assertEqual(templaty.evaluate("{{foo[1:3][1]}}", { 'foo': [1, 2, 3] }), '3')
 
+    def test_variable_existence(self):
+        self.assertEqual(templaty.evaluate("{{'foo' in globals()}}", { 'foo': 42 }), 'True')
+        self.assertEqual(templaty.evaluate("{{'foo' in globals()}}"), 'False')
 
