@@ -176,7 +176,7 @@ class Parser:
         while True:
             t0 = self.peek_token()
             if t0.type == OPERATOR:
-                t0_prec = get_opeator_info(t0.value, 1)
+                t0_prec = get_operator_precedence(t0.value, 1)
                 heapq.heappush((t0_prec, t0))
             else:
                 break

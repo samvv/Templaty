@@ -56,6 +56,7 @@ DEFAULT_BUILTINS = {
         '/': lambda a, b: a / b,
         '%': lambda a, b: a % b,
         '==': lambda a, b: a == b,
+        '!=': lambda a, b: a != b,
         'snake': to_snake_case,
         'upper': lambda s: s.upper(),
         'lower': lambda s: s.lower(),

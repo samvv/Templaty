@@ -392,7 +392,8 @@ class Scanner:
                     self.get_char()
                     c1 = self.get_char()
                     if c1 == '=':
-                        yield Token(OPERATOR, start_pos, self._curr_pos.clone())
+                        yield Token(OPERATOR, start_pos, self._curr_pos.clone(), '!=')
+
                     elif c1 == '}':
                         yield Token(CLOSE_CODE_BLOCK, start_pos, self._curr_pos.clone())
                     else:
