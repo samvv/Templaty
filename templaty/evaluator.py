@@ -195,6 +195,7 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
         outer_indent = len(curr_indent)
         inner_indent = get_inner_indentation(stmt, at_blank_line)
         wrapped = is_inner_wrapped(stmt.body)
+        k = 0
         for i, element in enumerate(elements):
             env2.set(stmt.pattern.name, element)
             env2.set('index', i)
@@ -204,10 +205,12 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
             if wrapped:
                 # remove first newline for i > 0
                 # rest will be removed by dedent()
-                if i > 0:
+                if k > 0:
                     del iter_result[0:1]
                 # we're wrapped, so insert sep somewhere
                 # before the last newline is added
+                # FIXME this will not work if continue is called
+                # on the last element
                 if i < len(elements)-1:
                     last_newline = find_trailing_newline(str(iter_result))
                     iter_result.insert_at(last_newline, sep)
@@ -215,6 +218,7 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
                 if i < len(elements)-1:
                     iter_result += sep
             result += iter_result
+            k += 1
         if wrapped:
             result.dedent()
             del result[0:1]
