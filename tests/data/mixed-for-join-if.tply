@@ -5,6 +5,12 @@
     {% endif %}
 {% endfor %}
 
+{% if False %}
+  {% if False %}
+    This should not add any newlines.
+  {% endif %}
+{% endif %}
+
 {% join i in range(0, 3) with ',' %}
     {% if index != 2 %}
         BAR

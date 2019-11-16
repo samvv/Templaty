@@ -102,6 +102,17 @@ def get_inner_indentation(node, at_blank_line=True):
         else:
             at_blank_line = False
 
+def remove_last_newlines(result, count):
+    offset = len(result)-1
+    while offset >= 0:
+        ch = result[offset]
+        if ch == '\n':
+            count -= 1
+        elif not is_blank(ch):
+            break
+        offset -= 1
+    del result[offset+1:]
+
 def find_trailing_newline(text):
     offset = len(text)-1
     for ch in reversed(text):
@@ -123,6 +134,7 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
 
     curr_indent = ''
     at_blank_line = True
+    blank_line_count = 0
 
     def eval_code_expr(e, env):
         if isinstance(e, ConstExpression):
@@ -161,6 +173,7 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
 
             last_indent = len(curr_indent)
             prev_line_blank = at_blank_line
+            prev_blank_line_count = blank_line_count
             next_stmt = None if i == len(stmts)-1 else stmts[i+1]
             next_line_blank = next_stmt is not None and (isinstance(next_stmt, TextStatement) and starts_with_newline(next_stmt.text))
 
@@ -181,10 +194,11 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
                     del result[-last_indent:]
 
                 # blocks that generated no content can safely be skipped
-                # we do so by deleting the last newline
-                # we know the newline is there because prev_line_blank is true
+                # we do so by deleting the last newlines
+                # we know the newlines are there because prev_line_blank is true
+                # blank_line_count will contain the amount of newlines
                 if len(iter_result) == 0:
-                    del result[-1:]
+                    remove_last_newlines(result, prev_blank_line_count)
 
             # we've finished processing this iter_result, so append it to the
             # final result
@@ -194,7 +208,7 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
 
 
     def update_locals(text):
-        nonlocal at_blank_line, curr_indent
+        nonlocal at_blank_line, blank_line_count, curr_indent
         last_indent = ''
         has_newline = False
         for ch in reversed(text):
@@ -202,10 +216,12 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
                 last_indent += ' '
             elif ch == '\n':
                 has_newline = True
+                blank_line_count += 1
                 at_blank_line = True
                 break
             else:
                 last_indent = ''
+                blank_line_count = 0
                 at_blank_line = False
         if not has_newline:
             if at_blank_line:
@@ -291,7 +307,10 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
 
     def eval_statement(stmt, env):
 
-        nonlocal curr_indent, at_blank_line
+        nonlocal curr_indent, at_blank_line, blank_line_count
+
+        if not isinstance(stmt, TextStatement):
+            blank_line_count = 0
 
         if isinstance(stmt, TextStatement):
             update_locals(stmt.text)
