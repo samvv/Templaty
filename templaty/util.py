@@ -206,6 +206,9 @@ def get_element_type(ty):
     else:
         return ty
 
+def is_tuple_type(ty):
+    return hasattr(ty, '__origin__') and ty.__origin__ == tuple
+
 def is_special_type(ty):
     return ty == typing.Any or is_none_type(ty)
 
@@ -222,6 +225,13 @@ def preorder(node):
         yield front
         for node in front.get_child_nodes():
             stack.append(node)
+
+def satisfies_type(val, ty):
+    if is_none_type(ty):
+        return val is None
+    elif is_list_type(ty):
+        return isinstance(val, list) and all(satisfies_type(el, ty.__args__[0]) for el in val)
+    raise NotImplementedError("type checking for the given type is not implemented")
 
 class BaseNode:
 
@@ -249,15 +259,28 @@ class BaseNode:
         return iter(self.__class__.__annotations__.keys())
 
     def get_child_nodes(self):
+
+        def visit(value, ty):
+            if is_special_type(ty):
+                pass
+            elif is_union_type(ty):
+                for ty_2 in ty.__args__:
+                    if satisfies_type(value, ty_2):
+                        yield from visit(value, ty_2)
+            elif is_type_optional(ty):
+                if value is not None:
+                    yield from visit(value, ty.__args__[0])
+            elif is_list_type(ty):
+                for el in value:
+                    yield from visit(el, ty.__args__[0])
+            elif is_tuple_type(ty):
+                for i, ty_2 in enumerate(ty.__args__):
+                    yield from visit(value[i], ty_2)
+            elif issubclass(ty, BaseNode):
+                yield value
+
         for name, value in self.__dict__['_fields'].items():
-            if value is not None:
-                ty = get_element_type(self.__class__.__annotations__[name])
-                if not is_special_type(ty) and issubclass(ty, BaseNode):
-                    if isinstance(value, list):
-                        for el in value:
-                            yield el
-                    else:
-                        yield value
+            yield from visit(value, self.__class__.__annotations__[name])
 
     def get_field_items(self):
         for name, value in self.__dict__['_fields'].items():

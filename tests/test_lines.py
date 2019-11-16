@@ -222,6 +222,26 @@ class TestIndent(TestCase):
         t2.indent('  ')
         self.assertEqual(str(t2), '  0\n  1\n  2\n')
 
+    def test_empty(self):
+        t1 = Lines()
+        t1.indent('  ')
+        self.assertEqual(str(t1), '')
+        t2 = Lines([Line('', True), Line('', True)])
+        t2.indent('  ')
+        self.assertEqual(str(t2), '')
+
+    def test_start_end(self):
+        t1 = Lines([Line('foo'), Line('bar'), Line('bax', True)])
+        t1.indent('  ', start=9)
+        self.assertEqual(str(t1), 'foo\nbar\nbax')
+
+    def test_start_middle(self):
+        t1 = Lines([Line('foo'), Line('bar'), Line('bax', True)])
+        t1.indent('  ', start=2)
+        self.assertEqual(str(t1), 'foo\n  bar\n  bax')
+        t1 = Lines([Line('foo'), Line('bar'), Line('bax', True)])
+        t1.indent('  ', start=5)
+        self.assertEqual(str(t1), 'foo\nbar\n  bax')
 
 class TestDedent(TestCase):
 

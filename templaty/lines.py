@@ -101,11 +101,29 @@ class Line:
         self.text = prefix + self.text
 
 
+def split_lines(text):
+    lines = []
+    buffered = ''
+    for ch in text:
+        if ch == '\n':
+            lines.append(Line(buffered))
+            buffered = ''
+        else:
+            buffered += ch
+    if len(buffered) > 0:
+        lines.append(Line(buffered, True))
+    return lines
+
+
 class Lines:
 
 
     def __init__(self, lines=[]):
-        self._lines = list(lines)
+        if isinstance(lines, str):
+            lines = split_lines(lines)
+        else:
+            lines = list(lines)
+        self._lines = lines
 
 
     def __str__(self):
@@ -180,15 +198,18 @@ class Lines:
             raise IndexError(f"index {offset} out of bounds")
 
 
-    #  def rfind(self, pred):
-    #      offset = len(self)
-    #      for line in reversed(self._lines):
-    #          for ch in reversed(line): 
-    #              if pred(ch):
-    #                  return offset
-    #              else:
-    #                  offset -= 1
-    #      return None
+    def find(self, pred):
+        if isinstance(pred, str):
+            expected = pred
+            pred = lambda ch: ch == expected
+        offset = len(self)
+        for line in self._lines:
+            for ch in line: 
+                if pred(ch):
+                    return offset
+                else:
+                    offset -= 1
+        return len(self)
 
     def __delitem__(self, item):
 
@@ -252,15 +273,19 @@ class Lines:
             raise TypeError(f"item {item} must be a slice or a number")
 
 
-    def indent(self, indentation='  ', at_blank_line=True, join_with_prev=False):
+    def indent(self, indentation='  ', at_blank_line=True, join_with_prev=False, start=0):
+        offset = 0
         for line in self._lines:
             if at_blank_line:
-                for ch in line.text:
+                for i, ch in enumerate(line.text):
                     if not is_blank(ch):
                         at_blank_line = False
-                        line.prepend(indentation)
+                        if (offset + i) >= start:
+                            line.prepend(indentation)
                         break
+            offset += len(line.text)
             if not line.join_with_next:
+                offset += 1
                 at_blank_line = True
 
     def get_indentation(self, at_blank_line=True, default_indent=0):
@@ -298,16 +323,73 @@ class Lines:
                 at_blank_line = True
 
 
-def split_lines(text):
-    lines = []
-    buffered = ''
-    for ch in text:
-        if ch == '\n':
-            lines.append(Line(buffered))
-            buffered = ''
-        else:
-            buffered += ch
-    if len(buffered) > 0:
-        lines.append(Line(buffered, True))
-    return Lines(lines)
+def apply_indent_override(lines):
+    output = ''
+    lines = lines._lines
+    i = 0
 
+    while i < len(lines):
+
+        indent_override = lines[i].indent_override
+
+        # look ahead to see if this line or the next may contain
+        # an indent_override flag
+        j = i + 1
+        while j < len(lines) and lines[j].join_with_next:
+            if lines[j].indent_override is not None:
+                indent_override = lines[j].indent_override
+                break
+            j += 1
+
+        # no indent_override means there is no
+        # special processing that has to take place
+        if indent_override is None:
+            output += str(lines[i])
+
+        else:
+
+            curr_indent_override = indent_override
+            k = 0
+
+            while i < len(lines):
+
+                # pass through any characters that
+                # are accepted by curr_indent_override
+                while k < len(lines[i].text):
+                    ch = lines[i].text[k]
+                    if curr_indent_override == 0:
+                        break
+                    elif is_blank(ch):
+                        curr_indent_override -= 1
+                        output += ch
+                        k += 1
+                    else:
+                        output += ' ' * curr_indent_override
+                        break
+
+                # FIXME currently no code requires this
+                # if the line was not long enough and the next line might still
+                # contain indentation, then now is the time to process it
+                #  if curr_indent_override > 0:
+                #      i += 1
+                #      continue
+
+                # skip any characters that are remaining
+                # because they are excess indentation
+                while k < len(lines[i].text) and is_blank(lines[i].text[k]):
+                    k += 1
+
+                # now the real string is added
+                output += lines[i].text[k:]
+
+                # finish off unless we have to append more lines
+                if not lines[i].join_with_next:
+                    output += '\n'
+                    break
+
+                curr_indent_override = indent_override
+                i += 1
+
+        i += 1
+
+    return output
