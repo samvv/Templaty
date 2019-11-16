@@ -70,15 +70,6 @@ def is_inner_wrapped(body):
        and isinstance(body[-1], TextStatement) \
        and ends_with_newline(body[-1].text)
 
-#  def unwrap(body, result):
-#      if is_inner_wrapped(body):
-#          result.dedent()
-#          del result[0:1]
-#          del result[-1:]
-#          result.indent(' ' * outer_indent)
-#      else:
-#          result.indent(' ' * outer_indent)
-
 def get_inner_indentation(node, at_blank_line=True):
     curr_indent = 0
     min_indent = None
@@ -104,7 +95,7 @@ def get_inner_indentation(node, at_blank_line=True):
 
 def remove_last_newlines(result, count):
     offset = len(result)-1
-    while offset >= 0:
+    while count > 0 and offset >= 0:
         ch = result[offset]
         if ch == '\n':
             count -= 1
