@@ -1,0 +1,13 @@
+
+{% for rule in range(0, 3) %}
+    {% if index % 2 == 1 %}
+        FOO
+    {% endif %}
+{% endfor %}
+
+{% join rule in range(0, 3) with ',' %}
+    {% if index != 2 %}
+        BAR
+    {% endif %}
+{% endjoin %}
+
