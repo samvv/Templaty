@@ -157,7 +157,7 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
             elif e.name == 'locals':
                 return lambda: env
             else:
-                raise RuntimeError(f"variable '{name}' is not defined")
+                raise RuntimeError(f"variable '{e.name}' is not defined")
         elif isinstance(e, AppExpression):
             op = eval_code_expr(e.operator, env)
             args = list(eval_code_expr(arg, env) for arg in e.operands)
@@ -265,7 +265,8 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
 
             # blocks that generated no content other than the single newline
             # that is left after eval_statement_list can safely be skipped
-            if len(iter_result) == 0 or str(iter_result) == '\n':
+            # FIXME this check might need to be fine-tuned
+            if is_empty(str(iter_result)):
                 continue
 
             if last_iter_result is not None:
