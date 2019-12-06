@@ -52,7 +52,9 @@ def to_snake_case(name):
         return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
 DEFAULT_BUILTINS = {
-        'range': lambda a, b: range(a, b),
+        'isinstance': isinstance,
+        'range': range,
+        'reversed': reversed,
         '+': lambda a, b: a + b,
         '-': lambda a, b: a - b,
         '*': lambda a, b: a * b,
