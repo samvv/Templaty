@@ -25,11 +25,12 @@ setup(
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
     ],
     keywords='template code-generator c++ c php java python',
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
     python_requires='>=3.5, <4',
-    install_requires=['gast'],
+    install_requires=[],
     extras_require={
         'dev': ['check-manifest'],
         'test': ['coverage'],

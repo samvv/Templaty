@@ -152,11 +152,6 @@ def postorder(root, expand):
     for node in reversed(stack_2):
         yield node
 
-def set_all_parents(node, parent=None):
-    node.parent = parent
-    for child in gast.iter_child_nodes(node):
-        set_all_parents(child, node)
-
 SPECIAL_CHARS = {
         '\x09': '\\t',
         '\x0D': '\\r',
