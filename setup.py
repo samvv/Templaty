@@ -16,7 +16,7 @@ setup(
     long_description_content_type='text/markdown',
     url='https://github.com/samvv/Templaty',
     author='Sam Vervaeck',
-    author_email='vervaeck.sam@skynet.be',
+    author_email='samvv@pm.me',
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
@@ -32,7 +32,7 @@ setup(
     python_requires='>=3.5, <4',
     install_requires=[],
     extras_require={
-        'dev': ['check-manifest'],
+        'dev': ['check-manifest', 'pytest'],
         'test': ['coverage'],
     },
     entry_points={
