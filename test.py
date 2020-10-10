@@ -30,7 +30,7 @@ def do_save_cmd(args):
 
 def do_run_cmd(args):
     exit_code = 0
-    for pattern in args.files if 'files' in args else ['tests/data/*.tply']:
+    for pattern in args.files if 'files' in args else ['test-snippets/*.tply']:
         for path in glob(pattern):
             filename = os.path.basename(path)
             print(f"Checking {filename} ...")
@@ -52,10 +52,10 @@ def do_run_cmd(args):
 parser = argparse.ArgumentParser()
 subparsers = parser.add_subparsers()
 save_parser = subparsers.add_parser('save')
-save_parser.add_argument('files', nargs='*', default=['tests/data/*.tply'])
+save_parser.add_argument('files', nargs='*', default=['test-snippets/*.tply'])
 save_parser.set_defaults(func=do_save_cmd)
 run_parser = subparsers.add_parser('run')
-run_parser.add_argument('files', nargs='*', default=['tests/data/*.tply'])
+run_parser.add_argument('files', nargs='*', default=['test-snippets/*.tply'])
 run_parser.set_defaults(func=do_run_cmd)
 args = parser.parse_args()
 
