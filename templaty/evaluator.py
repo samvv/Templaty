@@ -52,6 +52,9 @@ def to_snake_case(name):
         return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
 DEFAULT_BUILTINS = {
+        'repr': repr,
+        'zip': zip,
+        'enumerate': enumerate,
         'isinstance': isinstance,
         'range': range,
         'reversed': reversed,
@@ -234,6 +237,14 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
         else:
             curr_indent = last_indent
 
+    def assign_patterns(env, pattern, value):
+        if isinstance(pattern, VarPattern):
+            env.set(pattern.name, value)
+        elif isinstance(pattern, TuplePattern):
+            for patt_2, val_2 in zip(pattern.elements, value):
+                assign_patterns(env, patt_2, val_2)
+        else:
+            raise RuntimeError(f'could not evaluate pattern {pattern}')
 
     def eval_repeat(stmt, sep, env):
 
@@ -259,7 +270,7 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
 
             # set up some environment variables
             # specific to the current iteration
-            env2.set(stmt.pattern.name, element)
+            assign_patterns(env2, stmt.pattern, element)
             env2.set('index', i)
 
             # generate the actual text

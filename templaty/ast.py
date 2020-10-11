@@ -23,6 +23,9 @@ class Node(BaseNode):
 class Pattern(Node):
     pass
 
+class TuplePattern(Pattern):
+    elements: List[Pattern]
+
 class VarPattern(Pattern):
     name: str
 
@@ -51,6 +54,9 @@ class ConstExpression(Expression):
 class AppExpression(Expression):
     operator: Expression
     operands: List[Expression]
+
+class TupleExpression(Expression):
+    elements: List[Expression]
 
 class Statement(Node):
     pass

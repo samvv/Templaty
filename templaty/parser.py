@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from pathlib import Path
 import textwrap
 import ast
 import heapq
@@ -73,24 +74,17 @@ def get_operator_precedence(token_type, arity):
 class ParseError(RuntimeError):
 
     def __init__(self, filename, start_pos, end_pos, expected, actual):
-        super().__init__("{}:{}:{}: Expected {} but got '{}'".format(filename, start_pos.line, start_pos.column, enum_or(token_type_to_string(tt) for tt in expected), actual))
-        self._start_pos = start_pos
-        self._end_pos = end_pos
-        self._expected = expected
-        self._actual = actual
-
-    @property
-    def start_pos(self):
-        return self._start_pos
-
-    @property
-    def end_pos(self):
-        return self._end_pos
+        expected_str = enum_or(token_type_to_string(tt) for tt in expected)
+        super().__init__(f"{filename}:{start_pos.line}:{start_pos.column}: Expected {expected_str} but got '{actual}'")
+        self.start_pos = start_pos
+        self.end_pos = end_pos
+        self.expected = expected
+        self.actual = actual
 
 class Parser:
 
     def __init__(self, scanner):
-        self._scanner = scanner
+        self.scanner = scanner
         self._token_stream = scanner.scan()
         self._token_buffer = []
         self._statement_stack = []
@@ -106,11 +100,33 @@ class Parser:
             return self._token_buffer.pop(0)
         return next(self._token_stream)
 
-    def parse_pattern(self):
+    def expect_token(self, token_type):
+        token = self.get_token()
+        if token.type != token_type:
+            self._raise_parse_error(token, [token_type])
+
+    def parse_tuple_pattern_element(self):
         t0 = self.get_token()
+        if t0.type == OPEN_PAREN:
+            self.get_token()
+            nested = self.parse_pattern()
+            self.expect_token(self.get_token(), OPEN_PAREN)
+            return nested
         if t0.type != IDENTIFIER:
             self._raise_parse_error(t0, [IDENTIFIER])
         return VarPattern(t0.value)
+
+    def parse_pattern(self):
+        elements = [ self.parse_tuple_pattern_element() ]
+        while True:
+            t1 = self.peek_token()
+            if t1.type != COMMA:
+                break
+            self.get_token()
+            elements.append(self.parse_tuple_pattern_element())
+        if len(elements) == 1:
+            return elements[0]
+        return TuplePattern(elements)
 
     def parse_member_expression(self, e):
         self._expect_token(DOT)
@@ -187,7 +203,6 @@ class Parser:
         while True:
             t0 = self.peek_token()
             if is_operator(t0.type, 1):
-                print("HERE")
                 self.get_token()
                 t0_prec = get_operator_precedence(t0.type, 1)
                 heapq.heappush(heap, (t0_prec, t0))
@@ -201,7 +216,7 @@ class Parser:
     def parse_prim_expression(self):
         t0 = self.get_token()
         if t0.type == OPEN_PAREN:
-            e = self.parse_expression()
+            e = self.parse_tuple_expression()
             self._expect_token(CLOSE_PAREN)
             return e
         elif t0.type == STRING_LITERAL:
@@ -220,7 +235,7 @@ class Parser:
                 break
             keep = t0
             keep_prec = get_operator_precedence(keep.type, 2)
-            if keep_prec is None:
+            if keep_prec is None or keep_prec < min_prec:
                 break
             self.get_token()
             rhs = self.parse_unary_expression()
@@ -239,6 +254,18 @@ class Parser:
     def parse_expression(self):
         return self.parse_binary_operators(self.parse_unary_expression(), 0)
 
+    def parse_tuple_expression(self):
+        exps = [ self.parse_expression() ]
+        while True:
+            t1 = self.peek_token()
+            if t1.type != COMMA:
+                break
+            self.get_token()
+            exps.append(self.parse_binary_operators())
+        if len(exps) == 1:
+            return exps[0]
+        return TupleExpression(exps)
+
     def parse_expression_block(self):
         self._expect_token(OPEN_EXPRESSION_BLOCK)
         e = self.parse_expression()
@@ -246,10 +273,10 @@ class Parser:
         return ExpressionStatement(e)
 
     def _raise_parse_error(self, token, expected):
-        raise ParseError(self._scanner.get_filename(), token.start_pos, token.end_pos, expected, self._get_text(token))
+        raise ParseError(self.scanner.get_filename(), token.start_pos, token.end_pos, expected, self._get_text(token))
 
     def _get_text(self, token):
-        return token.get_text(self._scanner._data)
+        return token.get_text(self.scanner._data)
 
     def _expect_token(self, tt):
         t0 = self.get_token()
