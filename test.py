@@ -42,10 +42,11 @@ def do_run_cmd(args):
                     expected = f.read()
             except FileNotFoundError:
                 print(f"Warning: {filename} does not have an expected output. Run 'test.py save {path}' to add it.")
+                write_diff('', actual)
                 continue
             if actual != expected:
                 print("Error: output does not correspond with saved state")
-                write_diff(actual, expected)
+                write_diff(expected, actual)
                 exit_code = 1
     return exit_code
 
