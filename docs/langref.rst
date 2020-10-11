@@ -354,6 +354,26 @@ out-of-the-box.
 
     FOO_BAR_BAZ
 
+``zip``
+
+  Merge two or more iterable values pairwise, so that an iteration over this structure yields
+  an element of each iterable in parallel.
+
+  .. code-block:: none
+
+    {!
+      names = ['coffee', 'tea', 'water']
+      weights = [2, 1, 3]
+    !}
+    PRIORITIES = {
+    {% for name, weight in zip(names, weights) %}
+      {{repr(name)}} = {{weight}}
+    {% endfor %}
+
+``index``
+
+  A variable that holds the current iteration count in the nearest `for`-loop.
+
 ``now``
 
   A variable holding the time the generator started, formatted using some default rules.
