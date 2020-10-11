@@ -1,0 +1,6 @@
+{!
+  numbers = ['ONE', 'TWO', 'THREE']
+!}
+{% for i, name in enumerate(numbers) %}
+  {{name}} = {{i}}
+{% endfor %}
