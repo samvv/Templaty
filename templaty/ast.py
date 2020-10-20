@@ -15,10 +15,30 @@
 import ast
 from typing import List, Optional, Any, Tuple, Union
 
-from .util import BaseNode
+from sweetener import BaseNode, Record
+
+class TextPos(Record):
+
+    offset: int = 0
+    line: int = 1
+    column: int = 1
+
+    def advance(self, text):
+        for ch in text:
+            if ch == '\n':
+                self.line += 1
+                self.column = 0
+            else:
+                self.column += 1
+            self.offset += 1
+
+
+class TextSpan(Record):
+    start_pos: TextPos
+    end_pos: TextPos
 
 class Node(BaseNode):
-    pass
+    span: Optional[TextSpan] = None
 
 class Pattern(Node):
     pass
@@ -43,7 +63,7 @@ class SliceExpression(Expression):
 
 class MemberExpression(Expression):
     expression: Expression
-    path: List[str]
+    members: List[str]
 
 class VarRefExpression(Expression):
     name: str
@@ -67,15 +87,18 @@ class TextStatement(Statement):
 class ExpressionStatement(Statement):
     expression: Expression
 
+class IfStatementCase(Node):
+    test: Optional[Expression]
+    body: List[Statement]
+
 class IfStatement(Statement):
-    cases: List[Tuple[Expression, List[Statement]]]
-    alternative: Optional[List[Statement]]
+    cases: List[IfStatementCase]
 
 class CodeBlock(Statement):
     module: ast.Module
 
 class SetIndentStatement(Statement):
-    level: int
+    level: Expression
     body: List[Statement]
 
 class JoinStatement(Statement):
@@ -87,6 +110,9 @@ class JoinStatement(Statement):
 class ForInStatement(Statement):
     pattern: Pattern
     expression: Expression
+    body: List[Statement]
+
+class Template(Node):
     body: List[Statement]
 
 def set_all_parents(node, parent=None):

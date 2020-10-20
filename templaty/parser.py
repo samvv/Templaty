@@ -16,6 +16,7 @@ from pathlib import Path
 import textwrap
 import ast
 import heapq
+from sweetener import clone
 
 from .scanner import *
 from .ast import *
@@ -132,9 +133,9 @@ class Parser:
         self._expect_token(DOT)
         t0 = self.get_token()
         if t0.type != IDENTIFIER:
-            self._raise_parse_error(t1, [IDENTIFIER])
+            self._raise_parse_error(t0, [IDENTIFIER])
         if isinstance(e, MemberExpression):
-            e.path.append(t0.value)
+            e.members.append(t0.value)
         else:
             e = MemberExpression(e, [t0.value])
         return e
@@ -261,16 +262,16 @@ class Parser:
             if t1.type != COMMA:
                 break
             self.get_token()
-            exps.append(self.parse_binary_operators())
+            exps.append(self.parse_expression())
         if len(exps) == 1:
             return exps[0]
         return TupleExpression(exps)
 
     def parse_expression_block(self):
-        self._expect_token(OPEN_EXPRESSION_BLOCK)
+        t0 = self._expect_token(OPEN_EXPRESSION_BLOCK)
         e = self.parse_expression()
-        self._expect_token(CLOSE_EXPRESSION_BLOCK)
-        return ExpressionStatement(e)
+        t2 = self._expect_token(CLOSE_EXPRESSION_BLOCK)
+        return ExpressionStatement(e, span=TextSpan(clone(t0.start_pos), clone(t2.end_pos)))
 
     def _raise_parse_error(self, token, expected):
         raise ParseError(self.scanner.get_filename(), token.start_pos, token.end_pos, expected, self._get_text(token))
@@ -282,37 +283,40 @@ class Parser:
         t0 = self.get_token()
         if t0.type != tt:
             self._raise_parse_error(t0, [tt])
+        return t0
 
     def parse_statement(self):
-        self._expect_token(OPEN_STATEMENT_BLOCK)
+        t0 = self._expect_token(OPEN_STATEMENT_BLOCK)
         t1 = self.get_token()
         if t1.type == IF_KEYWORD:
             self._statement_stack.append([ENDIF_KEYWORD, ELIF_KEYWORD, ELSE_KEYWORD])
             cond = self.parse_expression()
             self._expect_token(CLOSE_STATEMENT_BLOCK)
             then = list(self.parse_statement_block())
-            cases = [(cond, then)]
-            alt = None
+            last_token = self.peek_token()
+            cases = [IfStatementCase(cond, then, span=TextSpan(clone(t0.start_pos), clone(last_token.end_pos)))]
             while True:
-                self._expect_token(OPEN_STATEMENT_BLOCK)
+                first_token = self._expect_token(OPEN_STATEMENT_BLOCK)
                 t2 = self.get_token()
                 if t2.type == ELIF_KEYWORD:
                     cond = self.parse_expression()
                     self._expect_token(CLOSE_STATEMENT_BLOCK)
                     then = list(self.parse_statement_block())
-                    cases.append((cond, then))
+                    last_token = self.peek_token()
+                    cases.append(IfStatementCase(cond, then), span=TextSpan(clone(first_token.start_pos), clone(last_token.end_pos)))
                 elif t2.type == ELSE_KEYWORD:
                     self._expect_token(CLOSE_STATEMENT_BLOCK)
                     self._statement_stack[-1] = [ENDIF_KEYWORD]
-                    alt = list(self.parse_statement_block())
+                    body = list(self.parse_statement_block())
                     self._expect_token(OPEN_STATEMENT_BLOCK)
                     self._expect_token(ENDIF_KEYWORD)
-                    self._expect_token(CLOSE_STATEMENT_BLOCK)
+                    last_token = self._expect_token(CLOSE_STATEMENT_BLOCK)
+                    cases.append(IfStatementCase(None, body, span=TextSpan(clone(first_token.start_pos), clone(last_token.end_pos))))
                     break
                 elif t2.type == ENDIF_KEYWORD:
-                    self._expect_token(CLOSE_STATEMENT_BLOCK)
+                    last_token = self._expect_token(CLOSE_STATEMENT_BLOCK)
                     break
-            return IfStatement(cases, alt)
+            return IfStatement(cases, span=TextSpan(clone(t0.start_pos), clone(last_token.end_pos)))
         elif t1.type == FOR_KEYWORD:
             self._statement_stack.append([ENDFOR_KEYWORD])
             patt = self.parse_pattern()
@@ -322,8 +326,8 @@ class Parser:
             body = list(self.parse_statement_block())
             self._expect_token(OPEN_STATEMENT_BLOCK)
             self._expect_token(ENDFOR_KEYWORD)
-            self._expect_token(CLOSE_STATEMENT_BLOCK)
-            return ForInStatement(patt, e, body)
+            t7 = self._expect_token(CLOSE_STATEMENT_BLOCK)
+            return ForInStatement(patt, e, body, span=TextSpan(clone(t0.start_pos), clone(t7.end_pos)))
         elif t1.type == JOIN_KEYWORD:
             self._statement_stack.append([ENDJOIN_KEYWORD])
             patt = self.parse_pattern()
@@ -335,8 +339,8 @@ class Parser:
             body = list(self.parse_statement_block())
             self._expect_token(OPEN_STATEMENT_BLOCK)
             self._expect_token(ENDJOIN_KEYWORD)
-            self._expect_token(CLOSE_STATEMENT_BLOCK)
-            return JoinStatement(patt, e, sep, body)
+            t6 = self._expect_token(CLOSE_STATEMENT_BLOCK)
+            return JoinStatement(patt, e, sep, body, span=TextSpan(clone(t0.start_pos), clone(t6.end_pos)))
         elif t1.type == SETINDENT_KEYWORD:
             self._statement_stack.append([ENDSETINDENT_KEYWORD])
             e = self.parse_expression()
@@ -344,16 +348,16 @@ class Parser:
             body = list(self.parse_statement_block())
             self._expect_token(OPEN_STATEMENT_BLOCK)
             self._expect_token(ENDSETINDENT_KEYWORD)
-            self._expect_token(CLOSE_STATEMENT_BLOCK)
-            return SetIndentStatement(e, body)
+            t5 = self._expect_token(CLOSE_STATEMENT_BLOCK)
+            return SetIndentStatement(e, body, span=TextSpan(clone(t0.start_pos), clone(t5.end_pos)))
         elif t1.type == NOINDENT_KEYWORD:
             self._statement_stack.append([ENDNOINDENT_KEYWORD])
             self._expect_token(CLOSE_STATEMENT_BLOCK)
             body = list(self.parse_statement_block())
             self._expect_token(OPEN_STATEMENT_BLOCK)
             self._expect_token(ENDNOINDENT_KEYWORD)
-            self._expect_token(CLOSE_STATEMENT_BLOCK)
-            return SetIndentStatement(ConstExpression(0), body)
+            t5 = self._expect_token(CLOSE_STATEMENT_BLOCK)
+            return SetIndentStatement(ConstExpression(0), body, span=TextSpan(clone(t0.start_pos), clone(t5.end_pos)))
         else:
             expected = [FOR_KEYWORD, JOIN_KEYWORD, IF_KEYWORD, NOINDENT_KEYWORD, SETINDENT_KEYWORD]
             if len(self._statement_stack) > 0:
@@ -371,7 +375,6 @@ class Parser:
                 yield self.parse()
 
     def parse_code_block(self):
-        stmts = []
         self._expect_token(OPEN_CODE_BLOCK)
         t0 = self.get_token()
         if t0.type != CODE_BLOCK_CONTENT:
@@ -384,7 +387,7 @@ class Parser:
         t0 = self.peek_token()
         if t0.type == TEXT:
             self.get_token()
-            return TextStatement(self._get_text(t0))
+            return TextStatement(self._get_text(t0), span=TextSpan(clone(t0.start_pos), clone(t0.end_pos)))
         elif t0.type == OPEN_CODE_BLOCK:
             return self.parse_code_block()
         elif t0.type == OPEN_EXPRESSION_BLOCK:
@@ -395,10 +398,13 @@ class Parser:
             self._raise_parse_error(t0, [TEXT, OPEN_EXPRESSION_BLOCK, OPEN_STATEMENT_BLOCK])
 
     def parse_all(self):
+        body = list()
+        start_pos = clone(self.peek_token().start_pos)
         while True:
             t0 = self.peek_token()
             if t0.type == END_OF_FILE:
+                end_pos = clone(t0.end_pos)
                 break
             else:
-                yield self.parse()
-
+                body.append(self.parse())
+        return Template(body, span=TextSpan(start_pos, end_pos))

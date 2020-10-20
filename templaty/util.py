@@ -27,7 +27,7 @@ def is_blank(text):
             return False
     return True
 
-def is_empty(text):
+def is_whitespace(text):
     for ch in text:
         if not is_blank(ch) and not ch == '\n':
             return False
@@ -125,33 +125,6 @@ def to_snake_case(name):
     s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
-def breadthfirst(root, expand):
-    queue = [root]
-    while len(queue) > 0:
-        node = queue.pop(0)
-        yield node
-        for node in reversed(list(expand(node))):
-            queue.append(node)
-
-def preorder(root, expand):
-    stack = [root]
-    while len(stack) > 0:
-        node = stack.pop()
-        yield node
-        for node in expand(node):
-            stack.append(node)
-
-def postorder(root, expand):
-    stack_1 = [root]
-    stack_2 = []
-    while len(stack_1) > 0:
-        node = stack_1.pop()
-        stack_2.append(node)
-        for child in reversed(list(expand(node))):
-            stack_1.append(child)
-    for node in reversed(stack_2):
-        yield node
-
 SPECIAL_CHARS = {
         '\x09': '\\t',
         '\x0D': '\\r',
@@ -172,131 +145,3 @@ def escape(text):
         else:
             out += '\\u{:04X}'.format(ord(ch))
     return out
-
-import typing
-
-def is_list_type(ty):
-    return hasattr(ty, '__origin__') and ty.__origin__ == list
-
-def is_union_type(ty):
-    return hasattr(ty, '__origin__') and ty.__origin__ == typing.Union
-
-def is_none_type(ty):
-    return ty == type(None)
-
-def flatten_union_type(ty):
-    if is_union_type(ty):
-        return ((el2_ty for el2_ty in flatten_union_type(el_ty)) for el_ty in ty.__args__)
-    else:
-        return [ty]
-
-def is_type_optional(ty):
-    return any(is_none_type(el_ty) for el_ty in flatten_union_type(ty))
-
-def get_element_type(ty):
-    if is_list_type(ty):
-        return ty.__args__[0]
-    elif is_union_type(ty):
-        return next(get_element_type(el_ty) for el_ty in flatten_union_type(ty) if not is_none_type(el_ty))
-    else:
-        return ty
-
-def is_tuple_type(ty):
-    return hasattr(ty, '__origin__') and ty.__origin__ == tuple
-
-def is_special_type(ty):
-    return ty == typing.Any or is_none_type(ty)
-
-def get_index_type(ty):
-    if is_list_type(ty):
-        return int
-    else:
-        return None
-
-def preorder(node):
-    stack = [node]
-    while len(stack) > 0:
-        front = stack.pop()
-        yield front
-        for node in front.get_child_nodes():
-            stack.append(node)
-
-def satisfies_type(val, ty):
-    if is_none_type(ty):
-        return val is None
-    elif is_list_type(ty):
-        return isinstance(val, list) and all(satisfies_type(el, ty.__args__[0]) for el in val)
-    raise NotImplementedError("type checking for the given type is not implemented")
-
-class BaseNode:
-
-    def __init__(self, *args, **kwargs):
-        self.parent = None
-        fields = self.__dict__['_fields'] = dict()
-        i = 0
-        for name, ty in self.__class__.__annotations__.items():
-            if name in kwargs:
-                value = kwargs[name]
-            else:
-                value = args[i]
-                i += 1
-            fields[name] = value
-        for name, ty in self.__class__.__annotations__.items():
-            if not name in fields:
-                if is_list_type(ty):
-                    fields[name] = []
-                elif is_type_optional(ty):
-                    fields[name] = None
-                else:
-                    raise TypeError(f"field '{name}' is required but did not receive a value")
-
-    def get_field_names(self):
-        return iter(self.__class__.__annotations__.keys())
-
-    def get_child_nodes(self):
-
-        def visit(value, ty):
-            if is_special_type(ty):
-                pass
-            elif is_union_type(ty):
-                for ty_2 in ty.__args__:
-                    if satisfies_type(value, ty_2):
-                        yield from visit(value, ty_2)
-            elif is_type_optional(ty):
-                if value is not None:
-                    yield from visit(value, ty.__args__[0])
-            elif is_list_type(ty):
-                for el in value:
-                    yield from visit(el, ty.__args__[0])
-            elif is_tuple_type(ty):
-                for i, ty_2 in enumerate(ty.__args__):
-                    yield from visit(value[i], ty_2)
-            elif issubclass(ty, BaseNode):
-                yield value
-
-        for name, value in self.__dict__['_fields'].items():
-            yield from visit(value, self.__class__.__annotations__[name])
-
-    def get_field_items(self):
-        for name, value in self.__dict__['_fields'].items():
-            if value is not None:
-                if isinstance(value, list):
-                    for el in value:
-                        yield (name, el)
-                else:
-                    yield (name, value)
-
-    def __getattr__(self, name):
-        fields = self.__dict__['_fields']
-        if name in fields:
-            return fields[name]
-        if name in self.__dict__:
-            return self.__dict__[name]
-        raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
-
-    def __setattr__(self, name, value):
-        if name in self.__class__.__annotations__:
-            self.__dict__['_fields'][name] = value
-        else:
-            self.__dict__[name] = value
-

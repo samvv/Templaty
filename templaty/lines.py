@@ -159,7 +159,6 @@ class Lines:
 
 
     def __getitem__(self, item):
-
         if isinstance(item, int):
             for line in self._lines:
                 line_length = len(line)
@@ -272,56 +271,61 @@ class Lines:
         else:
             raise TypeError(f"item {item} must be a slice or a number")
 
-
-    def indent(self, indentation='  ', at_blank_line=True, join_with_prev=False, start=0):
-        offset = 0
-        for line in self._lines:
-            if at_blank_line:
+    def indent(self, indentation='  ', after_blank_line=True, skip_first_line=False, offset=0):
+        start = offset
+        start_index = 1 if skip_first_line else 0
+        for line in self._lines[start_index:]:
+            if after_blank_line:
                 for i, ch in enumerate(line.text):
                     if not is_blank(ch):
-                        at_blank_line = False
+                        after_blank_line = False
                         if (offset + i) >= start:
                             line.prepend(indentation)
                         break
             offset += len(line.text)
             if not line.join_with_next:
                 offset += 1
-                at_blank_line = True
+                after_blank_line = True
 
-    def get_indentation(self, at_blank_line=True, default_indent=0):
+    def get_indentation(self, after_blank_line=True, default_indent=0, skip_first_line=False):
         min_indent = None
         curr_indent = 0
-        for line in self._lines:
-            if at_blank_line:
+        start_index = 1 if skip_first_line else 0
+        for line in self._lines[start_index:]:
+            if after_blank_line:
                 for ch in line.text:
                     if is_blank(ch):
                         curr_indent += 1
                     elif min_indent is None or curr_indent < min_indent:
                         min_indent = curr_indent
             if not line.join_with_next:
-                at_blank_line = True
+                after_blank_line = True
                 curr_indent = 0
         if min_indent is None:
             min_indent = default_indent
         return min_indent
 
-    def dedent(self, at_blank_line=True, min_indent=None):
-        if min_indent is None:
-            min_indent = self.get_indentation(at_blank_line=at_blank_line)
-        for line in self._lines:
-            if at_blank_line:
-                i = 0
-                while i < len(line.text):
-                    if not is_blank(line.text[i]):
-                        at_blank_line = False
-                        break
-                    i += 1
-                to_remove = min(min_indent, i)
-                if to_remove > 0:
-                    del line[0:to_remove]
-            if not line.join_with_next:
-                at_blank_line = True
-
+    def dedent(self, after_blank_line=True, indentation=None, skip_first_line=False):
+        min_indent = self.get_indentation(
+                        after_blank_line=after_blank_line,
+                        skip_first_line=skip_first_line) \
+                    if indentation is None \
+                    else indentation
+        i = 0
+        if skip_first_line:
+            while self._lines[i].join_with_next:
+                i += 1
+        j = 0
+        while i < len(self._lines):
+            line = self._lines[i]
+            if not is_blank(line.text[j]):
+                if not line.join_with_next:
+                    to_remove = min(min_indent, i)
+                    if to_remove > 0:
+                        del line[0:to_remove]
+                    after_blank_line = True
+            elif after_blank_line and :
+                j += 1
 
 def apply_indent_override(lines):
     output = ''

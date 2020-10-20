@@ -87,13 +87,12 @@ def test_parse_single_if_statement():
     s = p.parse_statement()
     assert(isinstance(s, IfStatement))
     assert(len(s.cases) == 1)
-    cond, cons = s.cases[0]
-    assert(isinstance(cond, VarRefExpression))
-    assert(cond.name == 'somevar')
-    assert(len(cons) == 1)
-    assert(isinstance(cons[0], TextStatement))
-    assert(cons[0].text == 'Foo!')
-    assert(s.alternative is None)
+    case0 = s.cases[0]
+    assert(isinstance(case0.test, VarRefExpression))
+    assert(case0.test.name == 'somevar')
+    assert(len(case0.cons) == 1)
+    assert(isinstance(case0.cons[0], TextStatement))
+    assert(case0.cons[0].text == 'Foo!')
 
 def test_parse_fail_parse_close_delimiter():
     sc1 = Scanner('#<wrong_for_endif>', "{% for i in range(1, 10) %}Foo!{% endif %}")
@@ -210,8 +209,8 @@ def test_parse_simple_member_access():
     assert(isinstance(e, MemberExpression))
     assert(isinstance(e.expression, VarRefExpression))
     assert(e.expression.name == 'foo')
-    assert(len(e.path) == 1)
-    assert(e.path[0] == 'bar')
+    assert(len(e.members) == 1)
+    assert(e.members[0] == 'bar')
 
 def test_parse_complex_expression():
     sc = Scanner('#<member_access>', '(1 + 2).bar.baz.bax', True)
@@ -226,10 +225,10 @@ def test_parse_complex_expression():
     assert(e.expression.operands[0].value == 1)
     assert(isinstance(e.expression.operands[1], ConstExpression))
     assert(e.expression.operands[1].value == 2)
-    assert(len(e.path) == 3)
-    assert(e.path[0] == 'bar')
-    assert(e.path[1] == 'baz')
-    assert(e.path[2] == 'bax')
+    assert(len(e.members) == 3)
+    assert(e.members[0] == 'bar')
+    assert(e.members[1] == 'baz')
+    assert(e.members[2] == 'bax')
 
 def test_parse_simple_index():
     sc = Scanner("#<simple_index>", 'foo[2]', True)
@@ -262,7 +261,7 @@ def test_parse_complex_access():
     assert(e.index.value == 4)
     e1 = e.expression
     assert(isinstance(e1, MemberExpression))
-    assert(e1.path[0] == 'bar')
+    assert(e1.members[0] == 'bar')
     e2 = e1.expression
     assert(isinstance(e2, IndexExpression))
     assert(isinstance(e2.index, ConstExpression))

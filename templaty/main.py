@@ -30,12 +30,11 @@ def main(argv=None):
     with open(args.file, 'r') as f:
         contents = f.read()
 
-    sc = Scanner(args.file, contents)
-    p = Parser(sc)
-    ss = list(p.parse_all())
-    for s in ss:
-        set_all_parents(s)
+    # sc = Scanner(args.file, contents)
+    # p = Parser(sc)
+    # root_node = p.parse_all()
+    # set_parent_nodes(root_node)
 
-    print(evaluate(ss, data, filename=args.file))
+    print(evaluate(contents, data, filename=args.file))
 
 

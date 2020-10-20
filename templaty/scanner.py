@@ -13,7 +13,10 @@
 # limitations under the License.
 
 import re
+from typing import Any, Optional
+from sweetener import Record, clone
 
+from .ast import TextPos
 from .util import escape
 
 def is_space(ch):
@@ -267,61 +270,21 @@ def token_type_to_string(tt):
     elif tt == AT:
         return "'@'"
 
-class Position:
+class Token(Record):
 
-    def __init__(self, offset=0, line=1, column=1):
-        self.offset = offset
-        self.line = line
-        self.column = column
-
-    def clone(self):
-        return Position(self.offset, self.line, self.column)
-
-    def advance(self, text):
-        for ch in text:
-            if ch == '\n':
-                self.line += 1
-                self.column = 0
-            else:
-                self.column += 1
-            self.offset += 1
-
-class Token:
-
-    def __init__(self, type, start_pos, end_pos, value=None):
-        self._type = type
-        self._start_pos = start_pos
-        self._end_pos = end_pos
-        self._value = value
+    type: int
+    start_pos: TextPos
+    end_pos: TextPos
+    value: Optional[Any] = None
 
     def get_text(self, data):
-        return data[self._start_pos.offset:self._end_pos.offset]
-
-    @property
-    def type(self):
-        return self._type
-
-    @property
-    def value(self):
-        return self._value
-
-    @property
-    def start_pos(self):
-        return self._start_pos
-
-    @property
-    def end_pos(self):
-        return self._end_pos
+        return data[self.start_pos.offset:self.end_pos.offset]
 
 class ScanError(RuntimeError):
 
     def __init__(self, filename, start_pos, c0):
         super().__init__("{}:{}:{}: Got an unexpected {}".format(filename, start_pos.line, start_pos.column, pretty_char(c0)))
-        self._start_pos = start_pos
-
-    @property
-    def start_pos(self):
-        return self._start_pos
+        self.start_pos = start_pos
 
 class Scanner:
 
@@ -330,7 +293,7 @@ class Scanner:
         self._data = data
         self._offset = 0
         self._filename = filename
-        self._curr_pos = Position()
+        self._curr_pos = TextPos()
         self._mode = STATEMENT_MODE if is_code else TEXT_MODE 
 
     def get_filename(self):
@@ -358,7 +321,7 @@ class Scanner:
             ch = self._buffer.pop(0)
         if ch == '\n':
             self._curr_pos.line += 1
-            self._curr_pos.column = 0
+            self._curr_pos.column = 1
         else:
             self._curr_pos.column += 1
         self._curr_pos.offset += 1
@@ -367,7 +330,7 @@ class Scanner:
     def scan_raw_identifier(self):
         c0 = self.get_char()
         if not is_id_start(c0):
-            raise ScanError(self._filename, self._curr_pos.clone(), c0)
+            raise ScanError(self._filename, clone(self._curr_pos), c0)
         name = c0
         while True:
             ch1 = self.peek_char()
@@ -384,11 +347,11 @@ class Scanner:
 
     def scan_string_lit(self):
         value = ''
-        start_pos = self._curr_pos.clone()
+        start_pos = clone(self._curr_pos)
         escaping = False
         c0 = self.get_char()
         if c0 != '\'':
-            raise ScanError(self._filename, self._curr_pos.clone(), c0)
+            raise ScanError(self._filename, clone(self._curr_pos), c0)
         while True:
             ch = self.get_char()
             if ch == '\'':
@@ -400,35 +363,42 @@ class Scanner:
                 value += unescape(ch)
             else:
                 value += ch
-        return Token(STRING_LITERAL, start_pos, self._curr_pos.clone(), value)
+        return Token(STRING_LITERAL, start_pos, clone(self._curr_pos), value)
 
     def scan_raw_text(self):
         text = ''
-        start_pos = self._curr_pos.clone()
+        start_pos = clone(self._curr_pos)
         while True:
-            ch0 = self.peek_char()
+            ch0 = self.peek_char(1)
             if ch0 == EOF:
                 if len(text) > 0:
-                    return Token(TEXT, start_pos, self._curr_pos.clone(), text) 
-                return Token(END_OF_FILE, self._curr_pos.clone(), self._curr_pos.clone())
+                    return Token(TEXT, start_pos, clone(self._curr_pos), text) 
+                return Token(END_OF_FILE, clone(self._curr_pos), clone(self._curr_pos))
             elif ch0 == '{':
                 if len(text) > 0:
-                    return Token(TEXT, start_pos, self._curr_pos.clone(), text)
-                self.get_char()
-                ch1 = self.peek_char()
+                    return Token(TEXT, start_pos, clone(self._curr_pos), text)
+                ch1 = self.peek_char(2)
                 if ch1 == '{':
                     self._mode = STATEMENT_MODE
+                    start_pos = clone(self._curr_pos)
                     self.get_char()
-                    return Token(OPEN_EXPRESSION_BLOCK, start_pos, self._curr_pos.clone())
+                    self.get_char()
+                    return Token(OPEN_EXPRESSION_BLOCK, start_pos, clone(self._curr_pos))
                 elif ch1 == '%':
                     self._mode = STATEMENT_MODE
+                    start_pos = clone(self._curr_pos)
                     self.get_char()
-                    return Token(OPEN_STATEMENT_BLOCK, start_pos, self._curr_pos.clone())
+                    self.get_char()
+                    return Token(OPEN_STATEMENT_BLOCK, start_pos, clone(self._curr_pos))
                 elif ch1 == '!':
                     self._mode = CODE_BLOCK_MODE
+                    start_pos = clone(self._curr_pos)
                     self.get_char()
-                    return Token(OPEN_CODE_BLOCK, start_pos, self._curr_pos.clone())
+                    self.get_char()
+                    return Token(OPEN_CODE_BLOCK, start_pos, clone(self._curr_pos))
                 elif ch1 == '#':
+                    start_pos = clone(self._curr_pos)
+                    self.get_char()
                     self.get_char()
                     while True:
                         ch2 = self.get_char()
@@ -438,9 +408,10 @@ class Scanner:
                                 ch4 = self.peek_char()
                                 if ch4 == '\n':
                                     self.get_char()
-                                start_pos = self._curr_pos.clone()
+                                start_pos = clone(self._curr_pos)
                                 break
                 else:
+                    self.get_char()
                     text += ch0
             else:
                 self.get_char()
@@ -452,7 +423,7 @@ class Scanner:
                 yield self.scan_raw_text()
             elif self._mode == CODE_BLOCK_MODE:
                 in_string_literal = False
-                start_pos = self._curr_pos.clone()
+                start_pos = clone(self._curr_pos)
                 text = ''
                 while True:
                     c0 = self.peek_char(1)
@@ -463,65 +434,65 @@ class Scanner:
                         raise ScanError(self._filename, start_pos, c0)
                     text += self.get_char()
                 self._mode = TEXT_MODE
-                end_pos = self._curr_pos.clone()
+                end_pos = clone(self._curr_pos)
                 yield Token(CODE_BLOCK_CONTENT, start_pos, end_pos, text)
-                start_pos = self._curr_pos.clone()
+                start_pos = clone(self._curr_pos)
                 self.get_char()
                 self.get_char()
-                end_pos = self._curr_pos.clone()
+                end_pos = clone(self._curr_pos)
                 yield Token(CLOSE_CODE_BLOCK, start_pos, end_pos)
             elif self._mode == STATEMENT_MODE:
                 self.skip_ws()
-                start_pos = self._curr_pos.clone()
+                start_pos = clone(self._curr_pos)
                 c0 = self.peek_char()
                 if c0 == EOF:
-                    yield Token(END_OF_FILE, self._curr_pos.clone(), self._curr_pos.clone())
+                    yield Token(END_OF_FILE, clone(self._curr_pos), clone(self._curr_pos))
                 elif c0 == ':':
                     self.get_char()
-                    yield Token(COLON, start_pos, self._curr_pos.clone())
+                    yield Token(COLON, start_pos, clone(self._curr_pos))
                 elif c0 == '.':
                     self.get_char()
-                    yield Token(DOT, start_pos, self._curr_pos.clone())
+                    yield Token(DOT, start_pos, clone(self._curr_pos))
                 elif c0 == '!':
                     self.get_char()
                     c1 = self.get_char()
                     if c1 == '=':
-                        yield Token(NEQ_OPERATOR, start_pos, self._curr_pos.clone(), '!=')
+                        yield Token(NEQ_OPERATOR, start_pos, clone(self._curr_pos), '!=')
                     elif c1 == '}':
-                        yield Token(CLOSE_CODE_BLOCK, start_pos, self._curr_pos.clone())
+                        yield Token(CLOSE_CODE_BLOCK, start_pos, clone(self._curr_pos))
                     else:
-                        raise ScanError(self._filename, self._curr_pos.clone(), c0)
+                        raise ScanError(self._filename, clone(self._curr_pos), c0)
                 elif c0 == '%':
                     self.get_char()
                     c1 = self.get_char()
                     if c1 == '}':
                         self._mode = TEXT_MODE
-                        yield Token(CLOSE_STATEMENT_BLOCK, start_pos, self._curr_pos.clone())
+                        yield Token(CLOSE_STATEMENT_BLOCK, start_pos, clone(self._curr_pos))
                     else:
-                        yield Token(MOD_OPERATOR, start_pos, self._curr_pos.clone(), '%')
+                        yield Token(MOD_OPERATOR, start_pos, clone(self._curr_pos), '%')
                 elif c0 == '}':
                     self.get_char()
                     c1 = self.get_char()
                     if c1 == '}':
                         self._mode = TEXT_MODE
-                        yield Token(CLOSE_EXPRESSION_BLOCK, start_pos, self._curr_pos.clone())
+                        yield Token(CLOSE_EXPRESSION_BLOCK, start_pos, clone(self._curr_pos))
                     else:
-                        raise ScanError(self._filename, self._curr_pos.clone(), c0)
+                        raise ScanError(self._filename, clone(self._curr_pos), c0)
                 elif c0 == ',':
                     self.get_char()
-                    yield Token(COMMA, start_pos, self._curr_pos.clone())
+                    yield Token(COMMA, start_pos, clone(self._curr_pos))
                 elif c0 == '(':
                     self.get_char()
-                    yield Token(OPEN_PAREN, start_pos, self._curr_pos.clone())
+                    yield Token(OPEN_PAREN, start_pos, clone(self._curr_pos))
                 elif c0 == ')':
                     self.get_char()
-                    yield Token(CLOSE_PAREN, start_pos, self._curr_pos.clone())
+                    yield Token(CLOSE_PAREN, start_pos, clone(self._curr_pos))
                 elif c0 == '[':
                     self.get_char()
-                    yield Token(OPEN_BRACKET, start_pos, self._curr_pos.clone())
+                    yield Token(OPEN_BRACKET, start_pos, clone(self._curr_pos))
                 elif c0 == ']':
                     self.get_char()
-                    yield Token(CLOSE_BRACKET, start_pos, self._curr_pos.clone())
+                    yield Token(CLOSE_BRACKET, start_pos, clone(self._curr_pos))
                 elif c0 == '\'':
                     yield self.scan_string_lit()
                 elif is_digit(c0):
@@ -529,7 +500,7 @@ class Scanner:
                     digits = c0
                     while is_digit(self.peek_char()):
                         digits += self.get_char()
-                    yield Token(INTEGER, start_pos, self._curr_pos.clone(), int(digits))
+                    yield Token(INTEGER, start_pos, clone(self._curr_pos), int(digits))
                 elif is_operator_start(c0):
                     op = c0
                     self.get_char()
@@ -537,15 +508,15 @@ class Scanner:
                         op += self.get_char()
                     if not op in OPERATORS:
                         raise ScanError(self._filename, start_pos, op)
-                    yield Token(OPERATORS[op], start_pos, self._curr_pos.clone(), op)
+                    yield Token(OPERATORS[op], start_pos, clone(self._curr_pos), op)
                 elif is_id_start(c0):
                     name = self.scan_raw_identifier()
                     if name in NAMED_OPERATORS:
-                        yield Token(NAMED_OPERATORS[name], start_pos, self._curr_pos.clone(), name)
+                        yield Token(NAMED_OPERATORS[name], start_pos, clone(self._curr_pos), name)
                     elif name in KEYWORDS:
-                        yield Token(KEYWORDS[name], start_pos, self._curr_pos.clone(), name)
+                        yield Token(KEYWORDS[name], start_pos, clone(self._curr_pos), name)
                     else:
-                        yield Token(IDENTIFIER, start_pos, self._curr_pos.clone(), name)
+                        yield Token(IDENTIFIER, start_pos, clone(self._curr_pos), name)
                 else:
-                    raise ScanError(self._filename, self._curr_pos.clone(), c0)
+                    raise ScanError(self._filename, clone(self._curr_pos), c0)
 
