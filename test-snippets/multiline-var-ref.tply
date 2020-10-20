@@ -1,0 +1,16 @@
+{!
+excerpts = [
+"""  check_a()
+  while True:
+      check_b()""",
+"""  if foo:
+      bar()""",
+"""  do_foo()
+  do_bar()
+  do_baz()"""
+]
+!}
+def foo():
+    {% for excerpt in excerpts %}
+      {{excerpt}}
+    {% endfor %}
