@@ -46,7 +46,7 @@ def do_run_cmd(args):
                 continue
             if actual != expected:
                 print("Error: output does not correspond with saved state")
-                write_diff(expected, actual)
+                write_diff(actual, expected)
                 exit_code = 1
     return exit_code
 
