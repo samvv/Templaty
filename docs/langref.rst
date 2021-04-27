@@ -354,6 +354,26 @@ out-of-the-box.
 
     FOO_BAR_BAZ
 
+``camel(name, first_char_lowercase)``
+
+  Converts an identifier to snake-case.
+
+  The second argument is optional and determines whether the first character is
+  also capitalized or should be kept in lowercase. It defaults to ``False``.
+
+  This function should work on most common use-cases. For more complex ones, you
+  probably should write your own logic.
+
+  .. code-block:: none
+
+    {{"foo_bar" |> camel}}
+
+  Output:
+
+  .. code-block:: none
+
+    FooBar
+
 ``zip``
 
   Merge two or more iterable values pairwise, so that an iteration over this structure yields

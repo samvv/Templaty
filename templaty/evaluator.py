@@ -117,6 +117,10 @@ def to_snake_case(name):
         s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
         return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
+def to_camel_case(name, first_char_lowercase=False):
+    result = re.sub(r'[-_]', '', name.title())
+    return result[0].lower() + result[1:] if first_char_lowercase else result
+
 DEFAULT_BUILTINS = {
         'repr': repr,
         'zip': zip,
@@ -131,6 +135,7 @@ DEFAULT_BUILTINS = {
         '%': lambda a, b: a % b,
         '==': lambda a, b: a == b,
         '!=': lambda a, b: a != b,
+        'camel': to_camel_case,
         'snake': to_snake_case,
         'upper': lambda s: s.upper(),
         'lower': lambda s: s.lower(),
