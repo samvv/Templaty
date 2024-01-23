@@ -41,6 +41,7 @@ setup(
         ],
     },
     project_urls={
+        'Documentation': 'https://templaty.readthedocs.io/',
         'Bug Reports': 'https://github.com/samvv/Templaty/issues',
         'Source': 'https://github.com/samvv/Templaty/',
     },
