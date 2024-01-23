@@ -13,13 +13,10 @@
 # limitations under the License.
 
 from datetime import datetime
-import ast
 import re
-import textwrap
 
-from .scanner import TextPos
 from .ast import *
-from .util import get_indentation, is_blank, starts_with_newline, ends_with_newline, escape
+from .util import is_blank, starts_with_newline, ends_with_newline
 from sweetener.node import preorder, set_parent_nodes
 
 def indent(text, indentation, until_prev_line_blank=True, start=0):
@@ -164,7 +161,7 @@ def is_inner_wrapped(node):
        and isinstance(body[-1], TextStatement) \
        and ends_with_newline(body[-1].text)
 
-def is_outer_wrapped(node):
+def is_outer_wrapped(node: Node):
     if isinstance(node, IfStatementCase):
         node = node.parent
     if node.prev_child is not None:
@@ -274,7 +271,7 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
         set_parent_nodes(ast)
 
     out = ''
-    indentation = 0
+    indent_level = 0
     indent_override = None
     curr_indent = ''
     after_blank_line = True
@@ -488,6 +485,19 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
         else:
             raise TypeError("Could not evaluate statement: unknown statement {}.".format(stmt))
 
+    def _do_indent():
+        nonlocal curr_indent, indent_level
+        indent_level += 1
+        curr_indent += indentation
+
+    def _do_dedent():
+        nonlocal curr_indent, indent_level
+        indent_level -= 1
+        curr_indent = curr_indent[0:-len(indentation)]
+
+    def _do_write(text):
+        write_or_skip(text)
+
     global_env = Env()
     global_env.set('True', True)
     global_env.set('False', False)
@@ -496,6 +506,9 @@ def evaluate(ast, ctx={}, indentation='  ', filename="#<anonymous>"):
         global_env.set(name, value)
     for name, value in ctx.items():
         global_env.set(name, value)
+    global_env.set('indent', _do_indent)
+    global_env.set('dedent', _do_dedent)
+    global_env.set('write', _do_write)
 
     eval_statement_list(ast.body, global_env, ast, 0)
     return out
