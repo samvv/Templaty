@@ -1,10 +1,8 @@
 
-import os, sys
+import sys
 import argparse
-from importlib import import_module
 import json
 
-from .ast import set_all_parents
 from .scanner import Scanner
 from .parser import Parser
 from .evaluator import evaluate
