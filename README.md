@@ -64,7 +64,7 @@ This is just the tip of the iceberg of what Templaty can do!
 
 Templaty is available on PyPi. You can issue the following command to install it:
 
-```
+```sh
 pip3 install -U --user templaty
 ```
 
