@@ -70,6 +70,26 @@ pip3 install -U --user templaty
 
 This should make the main command `templaty` available in your terminal.
 
+This should make the main command `templaty` available in your terminal.
+
+## IDE Integration
+
+### Neovim
+
+```lua
+local parser_config = require "nvim-treesitter.parsers".get_parser_configs()
+parser_config.templaty = {
+  install_info = {
+    url = "https://github.com/samvv/tree-sitter-templaty",
+    files = {"src/parser.c", "src/scanner.c"},
+    branch = "main",
+    generate_requires_npm = false,
+    requires_generate_from_grammar = false,
+  },
+  filetype = "templaty", 
+}
+```
+
 ## FAQ
 
 ### Will this library support Python 2?

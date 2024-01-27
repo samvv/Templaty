@@ -13,94 +13,96 @@
 # limitations under the License.
 
 import re
-from typing import Any, Optional
-from sweetener import Record, clone
+from typing import Any, Generator, Optional
+from sweetener import NewType, Record, TextFile, clone
 
-from .ast import TextPos
+from .ast import TextPos, TextSpan
 from .util import escape
 
-def is_space(ch):
+def is_space(ch: str) -> bool:
     return ch == '\t' or ch == '\n' or ch == '\r' or ch == ' '
 
-def is_id_start(ch):
+def is_id_start(ch: str) -> bool:
     return ch != EOF and re.match(r'^[a-zA-Z_]$', ch) is not None
 
-def is_id_part(ch):
+def is_id_part(ch: str) -> bool:
     return ch != EOF and re.match(r'^[a-zA-Z0-9_]$', ch) is not None
 
-def is_digit(ch):
+def is_digit(ch: str) -> bool:
     return ch != EOF and re.match(r'^[0-9]$', ch) is not None
 
-def pretty_char(ch):
+def pretty_char(ch: str) -> str:
     if ch == EOF:
         return 'end-of-file'
     else:
         return f'{escape(ch)}'
 
-EOF = -1
+EOF = '\uFFFF'
 
-TEXT                              = 0
-IDENTIFIER                        = 1
-STRING_LITERAL                    = 3
-BOOLEAN                           = 4
-IN_KEYWORD                        = 5
-FOR_KEYWORD                       = 6
-WHILE_KEYWORD                     = 7
-ENDFOR_KEYWORD                    = 8
-ENDWHILE_KEYWORD                  = 9
-OPEN_EXPRESSION_BLOCK             = 10
-CLOSE_EXPRESSION_BLOCK            = 11
-OPEN_STATEMENT_BLOCK              = 12
-CLOSE_STATEMENT_BLOCK             = 13
-END_OF_FILE                       = 14
-OPEN_PAREN                        = 15
-CLOSE_PAREN                       = 16
-OPEN_BRACKET                      = 18
-CLOSE_BRACKET                     = 19
-INTEGER                           = 20
-COMMA                             = 21
-JOIN_KEYWORD                      = 22
-ENDJOIN_KEYWORD                   = 23
-WITH_KEYWORD                      = 24
-IF_KEYWORD                        = 25
-ELSE_KEYWORD                      = 26
-ENDIF_KEYWORD                     = 27
-ELIF_KEYWORD                      = 28
-OPEN_CODE_BLOCK                   = 29
-CLOSE_CODE_BLOCK                  = 30
-DOT                               = 31
-NOINDENT_KEYWORD                  = 32
-SETINDENT_KEYWORD                 = 33
-DEDENT_KEYWORD                    = 34
-ENDNOINDENT_KEYWORD               = 35
-ENDSETINDENT_KEYWORD              = 36
-ENDDEDENT_KEYWORD                 = 37
-CODE_BLOCK_CONTENT                = 38
-COLON                             = 39
-ADD_OPERATOR                      = 40
-SUB_OPERATOR                      = 41
-MUL_OPERATOR                      = 42
-DIV_OPERATOR                      = 43
-EXP_OPERATOR                      = 44
-REM_OPERATOR                      = 45
-MOD_OPERATOR                      = 46
-LSHIFT_OPERATOR                   = 47
-RSHIFT_OPERATOR                   = 48
-BAND_OPERATOR                     = 49
-BOR_OPERATOR                      = 50
-BXOR_OPERATOR                     = 51
-BNOT_OPERATOR                     = 52
-LT_OPERATOR                       = 53
-GT_OPERATOR                       = 54
-LTE_OPERATOR                      = 55
-GTE_OPERATOR                      = 56
-EQ_OPERATOR                       = 57
-NEQ_OPERATOR                      = 58
-PIPE_OPERATOR                     = 59
-AND_OPERATOR                      = 60
-OR_OPERATOR                       = 61
-NOT_OPERATOR                      = 62
-AT                                = 63
+TokenType = NewType('TokenType', int)
+
+TEXT                              = TokenType(0)
+IDENTIFIER                        = TokenType(1)
+STRING_LITERAL                    = TokenType(3)
+BOOLEAN                           = TokenType(4)
+IN_KEYWORD                        = TokenType(5)
+FOR_KEYWORD                       = TokenType(6)
+WHILE_KEYWORD                     = TokenType(7)
+ENDFOR_KEYWORD                    = TokenType(8)
+ENDWHILE_KEYWORD                  = TokenType(9)
+OPEN_EXPRESSION_BLOCK             = TokenType(10)
+CLOSE_EXPRESSION_BLOCK            = TokenType(11)
+OPEN_STATEMENT_BLOCK              = TokenType(12)
+CLOSE_STATEMENT_BLOCK             = TokenType(13)
+END_OF_FILE                       = TokenType(14)
+OPEN_PAREN                        = TokenType(15)
+CLOSE_PAREN                       = TokenType(16)
+OPEN_BRACKET                      = TokenType(18)
+CLOSE_BRACKET                     = TokenType(19)
+INTEGER                           = TokenType(20)
+COMMA                             = TokenType(21)
+JOIN_KEYWORD                      = TokenType(22)
+ENDJOIN_KEYWORD                   = TokenType(23)
+WITH_KEYWORD                      = TokenType(24)
+IF_KEYWORD                        = TokenType(25)
+ELSE_KEYWORD                      = TokenType(26)
+ENDIF_KEYWORD                     = TokenType(27)
+ELIF_KEYWORD                      = TokenType(28)
+OPEN_CODE_BLOCK                   = TokenType(29)
+CLOSE_CODE_BLOCK                  = TokenType(30)
+DOT                               = TokenType(31)
+NOINDENT_KEYWORD                  = TokenType(32)
+SETINDENT_KEYWORD                 = TokenType(33)
+DEDENT_KEYWORD                    = TokenType(34)
+ENDNOINDENT_KEYWORD               = TokenType(35)
+ENDSETINDENT_KEYWORD              = TokenType(36)
+ENDDEDENT_KEYWORD                 = TokenType(37)
+CODE_BLOCK_CONTENT                = TokenType(38)
+COLON                             = TokenType(39)
+ADD_OPERATOR                      = TokenType(40)
+SUB_OPERATOR                      = TokenType(41)
+MUL_OPERATOR                      = TokenType(42)
+DIV_OPERATOR                      = TokenType(43)
+EXP_OPERATOR                      = TokenType(44)
+REM_OPERATOR                      = TokenType(45)
+MOD_OPERATOR                      = TokenType(46)
+LSHIFT_OPERATOR                   = TokenType(47)
+RSHIFT_OPERATOR                   = TokenType(48)
+BAND_OPERATOR                     = TokenType(49)
+BOR_OPERATOR                      = TokenType(50)
+BXOR_OPERATOR                     = TokenType(51)
+BNOT_OPERATOR                     = TokenType(52)
+LT_OPERATOR                       = TokenType(53)
+GT_OPERATOR                       = TokenType(54)
+LTE_OPERATOR                      = TokenType(55)
+GTE_OPERATOR                      = TokenType(56)
+EQ_OPERATOR                       = TokenType(57)
+NEQ_OPERATOR                      = TokenType(58)
+PIPE_OPERATOR                     = TokenType(59)
+AND_OPERATOR                      = TokenType(60)
+OR_OPERATOR                       = TokenType(61)
+NOT_OPERATOR                      = TokenType(62)
+AT                                = TokenType(63)
 
 OPERATORS = {
     '+': ADD_OPERATOR,
@@ -272,13 +274,13 @@ def token_type_to_string(tt):
 
 class Token(Record):
 
-    type: int
-    start_pos: TextPos
-    end_pos: TextPos
+    type: TokenType
+    span: TextSpan
     value: Optional[Any] = None
 
-    def get_text(self, data):
-        return data[self.start_pos.offset:self.end_pos.offset]
+    @property
+    def text(self):
+        return self.span.file.text[self.span.start_pos.offset:self.span.end_pos.offset]
 
 class ScanError(RuntimeError):
 
@@ -288,25 +290,26 @@ class ScanError(RuntimeError):
 
 class Scanner:
 
-    def __init__(self, filename, data, is_code=False):
+    def __init__(self, filename: str, data: str, is_code=False):
         self._buffer = []
         self._data = data
+        self.file = TextFile(data, name=filename)
         self._offset = 0
         self._filename = filename
         self._curr_pos = TextPos()
         self._mode = STATEMENT_MODE if is_code else TEXT_MODE 
 
-    def get_filename(self):
+    def get_filename(self) -> str:
         return self._filename
 
-    def read_char(self):
+    def read_char(self) -> str:
         if self._offset == len(self._data):
             return EOF
         ch = self._data[self._offset]
         self._offset += 1
         return ch
 
-    def peek_char(self, offset=1):
+    def peek_char(self, offset=1) -> str:
         while len(self._buffer) < offset:
             c0 = self.read_char()
             if c0 == EOF:
@@ -314,7 +317,7 @@ class Scanner:
             self._buffer.append(c0)
         return self._buffer[offset-1]
 
-    def get_char(self):
+    def get_char(self) -> str:
         if len(self._buffer) == 0:
             ch = self.read_char()
         else:
@@ -327,7 +330,7 @@ class Scanner:
         self._curr_pos.offset += 1
         return ch
 
-    def scan_raw_identifier(self):
+    def scan_raw_identifier(self) -> str:
         c0 = self.get_char()
         if not is_id_start(c0):
             raise ScanError(self._filename, clone(self._curr_pos), c0)
@@ -341,11 +344,11 @@ class Scanner:
                 break
         return name
 
-    def skip_ws(self):
+    def skip_ws(self) -> None:
         while is_space(self.peek_char()):
             self.get_char()
 
-    def scan_string_lit(self):
+    def scan_string_lit(self) -> Token:
         value = ''
         start_pos = clone(self._curr_pos)
         escaping = False
@@ -363,7 +366,7 @@ class Scanner:
                 value += unescape(ch)
             else:
                 value += ch
-        return Token(STRING_LITERAL, start_pos, clone(self._curr_pos), value)
+        return Token(STRING_LITERAL, TextSpan(self.file, start_pos, clone(self._curr_pos)), value)
 
     def scan_raw_text(self):
         text = ''
@@ -372,44 +375,54 @@ class Scanner:
             ch0 = self.peek_char(1)
             if ch0 == EOF:
                 if len(text) > 0:
-                    return Token(TEXT, start_pos, clone(self._curr_pos), text) 
-                return Token(END_OF_FILE, clone(self._curr_pos), clone(self._curr_pos))
+                    return Token(TEXT, TextSpan(self.file, start_pos, clone(self._curr_pos)), text)
+                return Token(END_OF_FILE, TextSpan(self.file, clone(self._curr_pos), clone(self._curr_pos)))
             elif ch0 == '{':
                 if len(text) > 0:
-                    return Token(TEXT, start_pos, clone(self._curr_pos), text)
+                    return Token(TEXT, TextSpan(self.file, start_pos, clone(self._curr_pos)), text)
                 ch1 = self.peek_char(2)
                 if ch1 == '{':
                     self._mode = STATEMENT_MODE
                     start_pos = clone(self._curr_pos)
                     self.get_char()
                     self.get_char()
-                    return Token(OPEN_EXPRESSION_BLOCK, start_pos, clone(self._curr_pos))
+                    return Token(OPEN_EXPRESSION_BLOCK, TextSpan(self.file, start_pos, clone(self._curr_pos)))
                 elif ch1 == '%':
                     self._mode = STATEMENT_MODE
                     start_pos = clone(self._curr_pos)
                     self.get_char()
                     self.get_char()
-                    return Token(OPEN_STATEMENT_BLOCK, start_pos, clone(self._curr_pos))
+                    return Token(OPEN_STATEMENT_BLOCK, TextSpan(self.file, start_pos, clone(self._curr_pos)))
                 elif ch1 == '!':
                     self._mode = CODE_BLOCK_MODE
                     start_pos = clone(self._curr_pos)
                     self.get_char()
                     self.get_char()
-                    return Token(OPEN_CODE_BLOCK, start_pos, clone(self._curr_pos))
+                    return Token(OPEN_CODE_BLOCK, TextSpan(self.file, start_pos, clone(self._curr_pos)))
                 elif ch1 == '#':
                     start_pos = clone(self._curr_pos)
                     self.get_char()
                     self.get_char()
+                    level = 1
                     while True:
                         ch2 = self.get_char()
+                        if ch2 == EOF:
+                            break
+                        if ch2 == '{':
+                            ch3 = self.get_char()
+                            if ch3 == '#':
+                                level += 1
                         if ch2 == '#':
                             ch3 = self.get_char()
                             if ch3 == '}':
-                                ch4 = self.peek_char()
-                                if ch4 == '\n':
-                                    self.get_char()
-                                start_pos = clone(self._curr_pos)
-                                break
+                                level -= 1
+                                if level == 0:
+                                    # FIXME remove this and add this logic to oultine()
+                                    ch4 = self.peek_char()
+                                    if ch4 == '\n':
+                                        self.get_char()
+                                    end_pos = clone(self._curr_pos)
+                                    break
                 else:
                     self.get_char()
                     text += ch0
@@ -417,7 +430,7 @@ class Scanner:
                 self.get_char()
                 text += ch0
 
-    def scan(self):
+    def scan(self) -> Generator[Token, None, None]:
         while True:
             if self._mode == TEXT_MODE:
                 yield self.scan_raw_text()
@@ -435,31 +448,31 @@ class Scanner:
                     text += self.get_char()
                 self._mode = TEXT_MODE
                 end_pos = clone(self._curr_pos)
-                yield Token(CODE_BLOCK_CONTENT, start_pos, end_pos, text)
+                yield Token(CODE_BLOCK_CONTENT, TextSpan(self.file, start_pos, end_pos), text)
                 start_pos = clone(self._curr_pos)
                 self.get_char()
                 self.get_char()
                 end_pos = clone(self._curr_pos)
-                yield Token(CLOSE_CODE_BLOCK, start_pos, end_pos)
+                yield Token(CLOSE_CODE_BLOCK, TextSpan(self.file, start_pos, end_pos))
             elif self._mode == STATEMENT_MODE:
                 self.skip_ws()
                 start_pos = clone(self._curr_pos)
                 c0 = self.peek_char()
                 if c0 == EOF:
-                    yield Token(END_OF_FILE, clone(self._curr_pos), clone(self._curr_pos))
+                    yield Token(END_OF_FILE, TextSpan(self.file, clone(self._curr_pos), clone(self._curr_pos)))
                 elif c0 == ':':
                     self.get_char()
-                    yield Token(COLON, start_pos, clone(self._curr_pos))
+                    yield Token(COLON, TextSpan(self.file, start_pos, clone(self._curr_pos)))
                 elif c0 == '.':
                     self.get_char()
-                    yield Token(DOT, start_pos, clone(self._curr_pos))
+                    yield Token(DOT, TextSpan(self.file, start_pos, clone(self._curr_pos)))
                 elif c0 == '!':
                     self.get_char()
                     c1 = self.get_char()
                     if c1 == '=':
-                        yield Token(NEQ_OPERATOR, start_pos, clone(self._curr_pos), '!=')
+                        yield Token(NEQ_OPERATOR, TextSpan(self.file, start_pos, clone(self._curr_pos)), '!=')
                     elif c1 == '}':
-                        yield Token(CLOSE_CODE_BLOCK, start_pos, clone(self._curr_pos))
+                        yield Token(CLOSE_CODE_BLOCK, TextSpan(self.file, start_pos, clone(self._curr_pos)))
                     else:
                         raise ScanError(self._filename, clone(self._curr_pos), c0)
                 elif c0 == '%':
@@ -467,32 +480,32 @@ class Scanner:
                     c1 = self.get_char()
                     if c1 == '}':
                         self._mode = TEXT_MODE
-                        yield Token(CLOSE_STATEMENT_BLOCK, start_pos, clone(self._curr_pos))
+                        yield Token(CLOSE_STATEMENT_BLOCK, TextSpan(self.file, start_pos, clone(self._curr_pos)))
                     else:
-                        yield Token(MOD_OPERATOR, start_pos, clone(self._curr_pos), '%')
+                        yield Token(MOD_OPERATOR, TextSpan(self.file, start_pos, clone(self._curr_pos)), '%')
                 elif c0 == '}':
                     self.get_char()
                     c1 = self.get_char()
                     if c1 == '}':
                         self._mode = TEXT_MODE
-                        yield Token(CLOSE_EXPRESSION_BLOCK, start_pos, clone(self._curr_pos))
+                        yield Token(CLOSE_EXPRESSION_BLOCK, TextSpan(self.file, start_pos, clone(self._curr_pos)))
                     else:
                         raise ScanError(self._filename, clone(self._curr_pos), c0)
                 elif c0 == ',':
                     self.get_char()
-                    yield Token(COMMA, start_pos, clone(self._curr_pos))
+                    yield Token(COMMA, TextSpan(self.file, start_pos, clone(self._curr_pos)))
                 elif c0 == '(':
                     self.get_char()
-                    yield Token(OPEN_PAREN, start_pos, clone(self._curr_pos))
+                    yield Token(OPEN_PAREN, TextSpan(self.file, start_pos, clone(self._curr_pos)))
                 elif c0 == ')':
                     self.get_char()
-                    yield Token(CLOSE_PAREN, start_pos, clone(self._curr_pos))
+                    yield Token(CLOSE_PAREN, TextSpan(self.file, start_pos, clone(self._curr_pos)))
                 elif c0 == '[':
                     self.get_char()
-                    yield Token(OPEN_BRACKET, start_pos, clone(self._curr_pos))
+                    yield Token(OPEN_BRACKET, TextSpan(self.file, start_pos, clone(self._curr_pos)))
                 elif c0 == ']':
                     self.get_char()
-                    yield Token(CLOSE_BRACKET, start_pos, clone(self._curr_pos))
+                    yield Token(CLOSE_BRACKET, TextSpan(self.file, start_pos, clone(self._curr_pos)))
                 elif c0 == '\'':
                     yield self.scan_string_lit()
                 elif is_digit(c0):
@@ -500,7 +513,7 @@ class Scanner:
                     digits = c0
                     while is_digit(self.peek_char()):
                         digits += self.get_char()
-                    yield Token(INTEGER, start_pos, clone(self._curr_pos), int(digits))
+                    yield Token(INTEGER, TextSpan(self.file, start_pos, clone(self._curr_pos)), int(digits))
                 elif is_operator_start(c0):
                     op = c0
                     self.get_char()
@@ -508,15 +521,15 @@ class Scanner:
                         op += self.get_char()
                     if not op in OPERATORS:
                         raise ScanError(self._filename, start_pos, op)
-                    yield Token(OPERATORS[op], start_pos, clone(self._curr_pos), op)
+                    yield Token(OPERATORS[op], TextSpan(self.file, start_pos, clone(self._curr_pos)), op)
                 elif is_id_start(c0):
                     name = self.scan_raw_identifier()
                     if name in NAMED_OPERATORS:
-                        yield Token(NAMED_OPERATORS[name], start_pos, clone(self._curr_pos), name)
+                        yield Token(NAMED_OPERATORS[name], TextSpan(self.file, start_pos, clone(self._curr_pos)), name)
                     elif name in KEYWORDS:
-                        yield Token(KEYWORDS[name], start_pos, clone(self._curr_pos), name)
+                        yield Token(KEYWORDS[name], TextSpan(self.file, start_pos, clone(self._curr_pos)), name)
                     else:
-                        yield Token(IDENTIFIER, start_pos, clone(self._curr_pos), name)
+                        yield Token(IDENTIFIER, TextSpan(self.file, start_pos, clone(self._curr_pos)), name)
                 else:
                     raise ScanError(self._filename, clone(self._curr_pos), c0)
 

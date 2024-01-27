@@ -17,19 +17,21 @@ def test_parse_expr_code_block():
     p = Parser(sc)
     s = p.parse()
     assert(isinstance(s, CodeBlock))
-    (len(s.module.body), 1)
+    assert(len(s.module.body) == 1)
 
 def test_parse_text_after_expr():
     sc = Scanner('#<text_after_expr>', 'The {{foo}} is cool!')
     p = Parser(sc)
-    ast = list(p.parse_all())
-    assert(ast[2].text == ' is cool!')
+    ast = p.parse_all()
+    s = ast.body.elements[2]
+    assert(isinstance(s, TextStatement))
+    assert(s.text == ' is cool!')
 
 def test_parse_func_app_no_args():
     sc = Scanner('#<func_app_no_args>', "foo()", True)
     p = Parser(sc)
     e = p.parse_expression()
-    assert(isinstance(e, AppExpression))
+    assert(isinstance(e, CallExpression))
     assert(isinstance(e.operator, VarRefExpression))
     assert(e.operator.name == 'foo')
     assert(len(e.operands) == 0)
@@ -38,7 +40,7 @@ def test_parse_func_app_one_arg():
     sc = Scanner('#<func_app_one_arg>', "foo(bar)", True)
     p = Parser(sc)
     e = p.parse_expression()
-    assert(isinstance(e, AppExpression))
+    assert(isinstance(e, CallExpression))
     assert(isinstance(e.operator, VarRefExpression))
     assert(e.operator.name == 'foo')
     assert(len(e.operands) == 1)
@@ -49,7 +51,7 @@ def test_parse_func_app_many_args():
     sc = Scanner('#<func_app_many_args>', "foo(bar, 1, 2, 3)", True)
     p = Parser(sc)
     e = p.parse_expression()
-    assert(isinstance(e, AppExpression))
+    assert(isinstance(e, CallExpression))
     assert(isinstance(e.operator, VarRefExpression))
     assert(e.operator.name == 'foo')
     assert(len(e.operands) == 4)
@@ -69,7 +71,7 @@ def test_parse_for_in_statement():
     assert(isinstance(s, ForInStatement))
     assert(isinstance(s.pattern, VarPattern))
     assert(s.pattern.name == 'i')
-    assert(isinstance(s.expression, AppExpression))
+    assert(isinstance(s.expression, CallExpression))
     assert(isinstance(s.expression.operator, VarRefExpression))
     assert(s.expression.operator.name == 'range')
     assert(len(s.expression.operands) == 2)
@@ -77,9 +79,9 @@ def test_parse_for_in_statement():
     assert(s.expression.operands[0].value == 1)
     assert(isinstance(s.expression.operands[1], ConstExpression))
     assert(s.expression.operands[1].value == 10)
-    assert(len(s.body) == 1)
-    assert(isinstance(s.body[0], TextStatement))
-    assert(s.body[0].text == 'Foo!')
+    assert(len(s.body.elements) == 1)
+    assert(isinstance(s.body.elements[0], TextStatement))
+    assert(s.body.elements[0].text == 'Foo!')
 
 def test_parse_single_if_statement():
     sc = Scanner('#<if_statement>', "{% if somevar %}Foo!{% endif %}")
@@ -90,9 +92,9 @@ def test_parse_single_if_statement():
     case0 = s.cases[0]
     assert(isinstance(case0.test, VarRefExpression))
     assert(case0.test.name == 'somevar')
-    assert(len(case0.cons) == 1)
-    assert(isinstance(case0.cons[0], TextStatement))
-    assert(case0.cons[0].text == 'Foo!')
+    assert(len(case0.body.elements) == 1)
+    assert(isinstance(case0.body.elements[0], TextStatement))
+    assert(case0.body.elements[0].text == 'Foo!')
 
 def test_parse_fail_parse_close_delimiter():
     sc1 = Scanner('#<wrong_for_endif>', "{% for i in range(1, 10) %}Foo!{% endif %}")
@@ -119,7 +121,7 @@ def test_parse_simple_add():
     sc = Scanner('#<simple_add>', 'a + b', True)
     p = Parser(sc)
     e = p.parse_expression()
-    assert(isinstance(e, AppExpression))
+    assert(isinstance(e, CallExpression))
     assert(len(e.operands) == 2)
     assert(isinstance(e.operands[0], VarRefExpression))
     assert(e.operands[0].name == 'a')
@@ -130,11 +132,13 @@ def test_parse_nested_add():
     sc = Scanner('#<nested_add>', '(a + b) + c', True)
     p = Parser(sc)
     e = p.parse_expression()
-    assert(isinstance(e, AppExpression))
+    assert(isinstance(e, CallExpression))
     assert(len(e.operands) == 2)
     arg1 = e.operands[0]
-    assert(isinstance(arg1, AppExpression))
+    assert(isinstance(arg1, CallExpression))
+    assert(isinstance(arg1.operands[0], VarRefExpression))
     assert(arg1.operands[0].name == 'a')
+    assert(isinstance(arg1.operands[1], VarRefExpression))
     assert(arg1.operands[1].name == 'b')
     arg2 = e.operands[1]
     assert(isinstance(arg2, VarRefExpression))
@@ -144,11 +148,13 @@ def test_parse_binary_operator_precedence1():
     sc = Scanner('#<binary_operator_precedence1>', 'a * b + c', True)
     p = Parser(sc)
     e = p.parse_expression()
-    assert(isinstance(e, AppExpression))
+    assert(isinstance(e, CallExpression))
     assert(len(e.operands) == 2)
     arg1 = e.operands[0]
-    assert(isinstance(arg1, AppExpression))
+    assert(isinstance(arg1, CallExpression))
+    assert(isinstance(arg1.operands[0], VarRefExpression))
     assert(arg1.operands[0].name == 'a')
+    assert(isinstance(arg1.operands[1], VarRefExpression))
     assert(arg1.operands[1].name == 'b')
     arg2 = e.operands[1]
     assert(isinstance(arg2, VarRefExpression))
@@ -158,25 +164,29 @@ def test_parse_binary_operator_precedence2():
     sc = Scanner('#<binary_operator_precedence2>', 'a + b * c', True)
     p = Parser(sc)
     e = p.parse_expression()
-    assert(isinstance(e, AppExpression))
+    assert(isinstance(e, CallExpression))
     assert(len(e.operands) == 2)
     arg1 = e.operands[0]
     assert(isinstance(arg1, VarRefExpression))
     assert(arg1.name == 'a')
     arg2 = e.operands[1]
-    assert(isinstance(arg2, AppExpression))
+    assert(isinstance(arg2, CallExpression))
+    assert(isinstance(arg2.operands[0], VarRefExpression))
     assert(arg2.operands[0].name == 'b')
+    assert(isinstance(arg2.operands[1], VarRefExpression))
     assert(arg2.operands[1].name == 'c')
 
 def test_parse_binary_operator_precedence3():
     sc = Scanner('#<binary_operator_precedence3>', 'a * b * c', True)
     p = Parser(sc)
     e = p.parse_expression()
-    assert(isinstance(e, AppExpression))
+    assert(isinstance(e, CallExpression))
     assert(len(e.operands) == 2)
     arg1 = e.operands[0]
-    assert(isinstance(arg1, AppExpression))
+    assert(isinstance(arg1, CallExpression))
+    assert(isinstance(arg1.operands[0], VarRefExpression))
     assert(arg1.operands[0].name == 'a')
+    assert(isinstance(arg1.operands[1], VarRefExpression))
     assert(arg1.operands[1].name == 'b')
     arg2 = e.operands[1]
     assert(isinstance(arg2, VarRefExpression))
@@ -186,21 +196,23 @@ def test_parse_binary_operator_precedence4():
     sc = Scanner('#<binary_operator_precedence4>', 'a ** b ** c', True)
     p = Parser(sc)
     e = p.parse_expression()
-    assert(isinstance(e, AppExpression))
+    assert(isinstance(e, CallExpression))
     assert(len(e.operands) == 2)
     arg1 = e.operands[0]
     assert(isinstance(arg1, VarRefExpression))
     assert(arg1.name == 'a')
     arg2 = e.operands[1]
-    assert(isinstance(arg2, AppExpression))
+    assert(isinstance(arg2, CallExpression))
+    assert(isinstance(arg2.operands[0], VarRefExpression))
     assert(arg2.operands[0].name == 'b')
+    assert(isinstance(arg2.operands[1], VarRefExpression))
     assert(arg2.operands[1].name == 'c')
 
 def test_parse_not_operator():
     sc = Scanner('#<not_operator>', 'not a', True)
     p = Parser(sc)
     e = p.parse_expression()
-    assert(isinstance(e, AppExpression))
+    assert(isinstance(e, CallExpression))
 
 def test_parse_simple_member_access():
     sc = Scanner('#<member_access>', 'foo.bar', True)
@@ -217,7 +229,7 @@ def test_parse_complex_expression():
     p = Parser(sc)
     e = p.parse_expression()
     assert(isinstance(e, MemberExpression))
-    assert(isinstance(e.expression, AppExpression))
+    assert(isinstance(e.expression, CallExpression))
     assert(isinstance(e.expression.operator, VarRefExpression))
     assert(e.expression.operator.name == '+')
     assert(len(e.expression.operands) == 2)

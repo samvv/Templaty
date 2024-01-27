@@ -13,9 +13,10 @@
 # limitations under the License.
 
 import ast
-from typing import List, Optional, Any, Tuple, Union
+from sys import setprofile
+from typing import List, Optional, Any
 
-from sweetener import BaseNode, Record
+from sweetener import BaseNode, Record, TextFile
 
 class TextPos(Record):
 
@@ -32,13 +33,17 @@ class TextPos(Record):
                 self.column += 1
             self.offset += 1
 
-
 class TextSpan(Record):
+    file: TextFile
     start_pos: TextPos
     end_pos: TextPos
 
 class Node(BaseNode):
     span: Optional[TextSpan] = None
+    indent_level: Optional[int] = None
+
+class Body(Node):
+    elements: list['Statement']
 
 class Pattern(Node):
     pass
@@ -71,7 +76,7 @@ class VarRefExpression(Expression):
 class ConstExpression(Expression):
     value: Any
 
-class AppExpression(Expression):
+class CallExpression(Expression):
     operator: Expression
     operands: List[Expression]
 
@@ -89,7 +94,7 @@ class ExpressionStatement(Statement):
 
 class IfStatementCase(Node):
     test: Optional[Expression]
-    body: List[Statement]
+    body: Body
 
 class IfStatement(Statement):
     cases: List[IfStatementCase]
@@ -99,24 +104,19 @@ class CodeBlock(Statement):
 
 class SetIndentStatement(Statement):
     level: Expression
-    body: List[Statement]
+    body: Body
 
 class JoinStatement(Statement):
     pattern: Pattern
     expression: Expression
     separator: Expression
-    body: List[Statement]
+    body: Body
 
 class ForInStatement(Statement):
     pattern: Pattern
     expression: Expression
-    body: List[Statement]
+    body: Body
 
 class Template(Node):
-    body: List[Statement]
-
-def set_all_parents(node, parent=None):
-    node.parent = parent
-    for child in node.get_child_nodes():
-        set_all_parents(child, node)
+    body: Body
 
