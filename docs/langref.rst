@@ -40,6 +40,21 @@ generates a C program that prints a predefined array of random numbers.
       {% endfor %}
   }
 
+Comments
+--------
+
+Block comments start with a `{#` and are closed with a `#}`. If no `#}` is
+present, the comment will run till the end of the file.
+
+.. code-block:: none
+
+   This is some text that is {# not #} rendered.
+
+   {#
+   This text is not rendered.
+   It can be as long as you want.
+   #}
+
 Regular Text
 ------------
 
