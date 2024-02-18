@@ -382,11 +382,13 @@ class Scanner:
                     if ch0 == EOF:
                         if len(text) > 0:
                             yield Token(TEXT, TextSpan(self.file, start_pos, clone(self._curr_pos)), text)
+                            text = ''
                         yield Token(END_OF_FILE, TextSpan(self.file, clone(self._curr_pos), clone(self._curr_pos)))
                         break
                     if ch0 == '{':
                         if len(text) > 0:
                             yield Token(TEXT, TextSpan(self.file, start_pos, clone(self._curr_pos)), text)
+                            text = ''
                         ch1 = self.peek_char(2)
                         if ch1 == '{':
                             self._mode = STATEMENT_MODE
