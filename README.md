@@ -36,7 +36,7 @@ What about generating an [identity matrix][3] in C that imposes no runtime cost?
 ```
 static const int IDENTITY_MATRIX[][] = [
   {% join i in range(0, 10) with ',' %}
-    [{% join j in range(0, 10) with ',' %}{% if j == i %}1{% else %}0{% endjoin %}]
+    [{% join j in range(0, 10) with ',' %}{% if j == i %}1{% else %}0{% endif %}{% endjoin %}]
   {% endjoin %}
 ];
 ```
