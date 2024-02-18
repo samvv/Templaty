@@ -21,8 +21,6 @@ type NodeWithBody = Template | ForInStatement | JoinStatement | SetIndentStateme
 
 type BlockNode = ForInStatement | JoinStatement | SetIndentStatement | CodeBlock
 
-D = TypeVar('D')
-
 @cache
 def get_indent(node: Node, at_blank_line = True, curr_indent = 0) -> int | None:
 
