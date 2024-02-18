@@ -415,7 +415,7 @@ class Scanner:
                             start_pos = clone(self._curr_pos)
                             self.get_char()
                             self.get_char()
-                            comment_text = '{#'
+                            comment_text = ''
                             level = 1
                             while True:
                                 ch2 = self.peek_char(1)
@@ -431,7 +431,6 @@ class Scanner:
                                     if level == 0:
                                         self.get_char()
                                         self.get_char()
-                                        comment_text += '#}'
                                         end_pos = clone(self._curr_pos)
                                         yield Token(COMMENT, TextSpan(self.file, start_pos, end_pos), comment_text)
                                         break
