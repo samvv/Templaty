@@ -18,6 +18,12 @@ def emit(node: Node, out = sys.stdout) -> None:
             out.write('}}')
             return
 
+        if isinstance(node, CommentStatement):
+            out.write('{#')
+            out.write(node.contents)
+            out.write('#}')
+            return
+
         if isinstance(node, IfStatement):
             out.write('{% if ')
             assert(node.cases[0].test is not None)
