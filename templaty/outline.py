@@ -296,7 +296,7 @@ def can_be_block(node: Node) -> TypeGuard[BlockNode]:
 
 @cache
 def is_block(stmt: Statement) -> bool:
-    if isinstance(stmt, CodeBlock):
+    if isinstance(stmt, CodeBlock) or isinstance(stmt, CommentStatement):
         return has_newline_or_eof_left(stmt.prev_sibling) \
             and has_newline_or_eof_right(stmt.next_sibling)
     if has_body(stmt):
