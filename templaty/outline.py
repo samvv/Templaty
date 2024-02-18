@@ -1,5 +1,5 @@
 
-from typing import Callable, TypeGuard, TypeVar
+from typing import Callable, TypeGuard, TypeVar, cast
 from functools import cache
 
 from sweetener.math import math
@@ -332,7 +332,7 @@ def outline(template: Template) -> None:
             for stmt in node.elements:
                 redent_blocks(stmt)
             if node.parent is not None and is_block(node.parent):
-                outer_indent = node.parent.indent_level
+                outer_indent = cast(Node, node.parent).indent_level
                 inner_indent = get_indent(node)
                 if outer_indent is not None and inner_indent is not None:
                     #keep = get_last_blank_line(node.last_child)
