@@ -1,7 +1,6 @@
 
 from typing import Callable, TypeGuard, TypeVar
 from functools import cache
-from typing import cast
 
 from sweetener.math import math
 
@@ -310,6 +309,20 @@ def is_block(stmt: Statement) -> bool:
 
 def outline(template: Template) -> None:
 
+    def remove_comments(node: Node) -> None:
+        if isinstance(node, CommentStatement):
+            if is_block(node):
+                remove_right_while(node.next_sibling, single_newline())
+            node.remove()
+            return
+        if isinstance(node, Body):
+            for element in node.elements:
+                remove_comments(element)
+            return
+        if has_body(node):
+            remove_comments(node.body)
+            return
+
     def redent_blocks(node: Node) -> None:
         if isinstance(node, TextStatement) \
             or isinstance(node, ExpressionStatement) \
@@ -392,6 +405,7 @@ def outline(template: Template) -> None:
 
         raise RuntimeError(f'unexpected {node}')
 
+    remove_comments(template)
     assign_indent_levels(template)
     redent_blocks(template.body)
     undent_specials(template.body);

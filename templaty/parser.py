@@ -388,7 +388,10 @@ class Parser:
         t0 = self.peek_token()
         if t0.type == TEXT:
             self.get_token()
-            return TextStatement(t0.text, span=t0.span)
+            return TextStatement(t0.value, span=t0.span)
+        elif t0.type == COMMENT:
+            self.get_token()
+            return CommentStatement(t0.value, span=t0.span)
         elif t0.type == OPEN_CODE_BLOCK:
             return self.parse_code_block()
         elif t0.type == OPEN_EXPRESSION_BLOCK:

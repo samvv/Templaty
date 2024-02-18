@@ -92,6 +92,9 @@ class TextStatement(Statement):
 class ExpressionStatement(Statement):
     expression: Expression
 
+class CommentStatement(Statement):
+    contents: str
+
 class IfStatementCase(Node):
     test: Optional[Expression]
     body: Body

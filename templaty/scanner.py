@@ -103,6 +103,7 @@ AND_OPERATOR                      = TokenType(60)
 OR_OPERATOR                       = TokenType(61)
 NOT_OPERATOR                      = TokenType(62)
 AT                                = TokenType(63)
+COMMENT                           = TokenType(64)
 
 OPERATORS = {
     '+': ADD_OPERATOR,
@@ -368,73 +369,76 @@ class Scanner:
                 value += ch
         return Token(STRING_LITERAL, TextSpan(self.file, start_pos, clone(self._curr_pos)), value)
 
-    def scan_raw_text(self):
-        text = ''
-        start_pos = clone(self._curr_pos)
-        while True:
-            ch0 = self.peek_char(1)
-            if ch0 == EOF:
-                if len(text) > 0:
-                    return Token(TEXT, TextSpan(self.file, start_pos, clone(self._curr_pos)), text)
-                return Token(END_OF_FILE, TextSpan(self.file, clone(self._curr_pos), clone(self._curr_pos)))
-            elif ch0 == '{':
-                if len(text) > 0:
-                    return Token(TEXT, TextSpan(self.file, start_pos, clone(self._curr_pos)), text)
-                ch1 = self.peek_char(2)
-                if ch1 == '{':
-                    self._mode = STATEMENT_MODE
-                    start_pos = clone(self._curr_pos)
-                    self.get_char()
-                    self.get_char()
-                    return Token(OPEN_EXPRESSION_BLOCK, TextSpan(self.file, start_pos, clone(self._curr_pos)))
-                elif ch1 == '%':
-                    self._mode = STATEMENT_MODE
-                    start_pos = clone(self._curr_pos)
-                    self.get_char()
-                    self.get_char()
-                    return Token(OPEN_STATEMENT_BLOCK, TextSpan(self.file, start_pos, clone(self._curr_pos)))
-                elif ch1 == '!':
-                    self._mode = CODE_BLOCK_MODE
-                    start_pos = clone(self._curr_pos)
-                    self.get_char()
-                    self.get_char()
-                    return Token(OPEN_CODE_BLOCK, TextSpan(self.file, start_pos, clone(self._curr_pos)))
-                elif ch1 == '#':
-                    start_pos = clone(self._curr_pos)
-                    self.get_char()
-                    self.get_char()
-                    level = 1
-                    while True:
-                        ch2 = self.get_char()
-                        if ch2 == EOF:
-                            break
-                        if ch2 == '{':
-                            ch3 = self.get_char()
-                            if ch3 == '#':
-                                level += 1
-                        if ch2 == '#':
-                            ch3 = self.get_char()
-                            if ch3 == '}':
-                                level -= 1
-                                if level == 0:
-                                    # FIXME remove this and add this logic to oultine()
-                                    ch4 = self.peek_char()
-                                    if ch4 == '\n':
-                                        self.get_char()
-                                    end_pos = clone(self._curr_pos)
-                                    break
-                else:
-                    self.get_char()
-                    text += ch0
-            else:
-                self.get_char()
-                text += ch0
-
     def scan(self) -> Generator[Token, None, None]:
+
         while True:
+
             if self._mode == TEXT_MODE:
-                yield self.scan_raw_text()
+
+                text = ''
+                start_pos = clone(self._curr_pos)
+                while True:
+                    ch0 = self.peek_char(1)
+                    if ch0 == EOF:
+                        if len(text) > 0:
+                            yield Token(TEXT, TextSpan(self.file, start_pos, clone(self._curr_pos)), text)
+                        yield Token(END_OF_FILE, TextSpan(self.file, clone(self._curr_pos), clone(self._curr_pos)))
+                        break
+                    if ch0 == '{':
+                        if len(text) > 0:
+                            yield Token(TEXT, TextSpan(self.file, start_pos, clone(self._curr_pos)), text)
+                        ch1 = self.peek_char(2)
+                        if ch1 == '{':
+                            self._mode = STATEMENT_MODE
+                            start_pos = clone(self._curr_pos)
+                            self.get_char()
+                            self.get_char()
+                            yield Token(OPEN_EXPRESSION_BLOCK, TextSpan(self.file, start_pos, clone(self._curr_pos)))
+                            break
+                        elif ch1 == '%':
+                            self._mode = STATEMENT_MODE
+                            start_pos = clone(self._curr_pos)
+                            self.get_char()
+                            self.get_char()
+                            yield Token(OPEN_STATEMENT_BLOCK, TextSpan(self.file, start_pos, clone(self._curr_pos)))
+                            break
+                        elif ch1 == '!':
+                            self._mode = CODE_BLOCK_MODE
+                            start_pos = clone(self._curr_pos)
+                            self.get_char()
+                            self.get_char()
+                            yield Token(OPEN_CODE_BLOCK, TextSpan(self.file, start_pos, clone(self._curr_pos)))
+                            break
+                        elif ch1 == '#':
+                            start_pos = clone(self._curr_pos)
+                            self.get_char()
+                            self.get_char()
+                            comment_text = '{#'
+                            level = 1
+                            while True:
+                                ch2 = self.peek_char(1)
+                                ch3 = self.peek_char(2)
+                                if ch2 == EOF:
+                                    end_pos = clone(self._curr_pos)
+                                    yield Token(COMMENT, TextSpan(self.file, start_pos, end_pos), comment_text)
+                                    break
+                                if ch2 == '{' and ch3 == '#':
+                                    level += 1
+                                elif ch2 == '#' and ch3 == '}':
+                                    level -= 1
+                                    if level == 0:
+                                        self.get_char()
+                                        self.get_char()
+                                        comment_text += '#}'
+                                        end_pos = clone(self._curr_pos)
+                                        yield Token(COMMENT, TextSpan(self.file, start_pos, end_pos), comment_text)
+                                        break
+                                comment_text += self.get_char()
+                    text += self.get_char()
+
             elif self._mode == CODE_BLOCK_MODE:
+
+                # TODO accept code block string literals that contain '!}'
                 in_string_literal = False
                 start_pos = clone(self._curr_pos)
                 text = ''
@@ -454,7 +458,9 @@ class Scanner:
                 self.get_char()
                 end_pos = clone(self._curr_pos)
                 yield Token(CLOSE_CODE_BLOCK, TextSpan(self.file, start_pos, end_pos))
+
             elif self._mode == STATEMENT_MODE:
+
                 self.skip_ws()
                 start_pos = clone(self._curr_pos)
                 c0 = self.peek_char()
