@@ -61,6 +61,9 @@ def execute_dir(dir: Path, dest_dir: Path, ctx: dict[str, Any] | None = None, **
             return
         if path.is_dir():
             ctx = clone(ctx)
+            helpers_file = path / (helpers_dir_name + '.py')
+            if helpers_file.exists():
+                visit_helpers(helpers_file, ctx)
             helpers_dir = path / helpers_dir_name
             if helpers_dir.exists():
                 visit_helpers(helpers_dir, ctx)
