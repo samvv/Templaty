@@ -19,7 +19,7 @@ import sphinx_rtd_theme
 # -- Project information -----------------------------------------------------
 
 project = 'Templaty'
-copyright = '2019, Sam Vervaeck'
+copyright = '2024, Sam Vervaeck'
 author = 'Sam Vervaeck'
 
 # The full version, including alpha/beta/rc tags
