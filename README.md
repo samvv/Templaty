@@ -76,6 +76,8 @@ This should make the main command `templaty` available in your terminal.
 
 ### Neovim
 
+⚠️ These definitions are stil under development.
+
 ```lua
 local parser_config = require "nvim-treesitter.parsers".get_parser_configs()
 parser_config.templaty = {
