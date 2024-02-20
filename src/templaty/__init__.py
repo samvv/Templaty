@@ -6,7 +6,6 @@ from typing import Any
 import importlib.util
 
 from sweetener import clone, warn
-from sweetener.ops import is_first_key
 
 from .main import main
 from .evaluator import evaluate
@@ -29,6 +28,10 @@ def dynamic_import(name: str, path: Path) -> ModuleType:
     spec.loader.exec_module(module)
     return module
 
+def strip_ext(name: str) -> str:
+    chunks = name.split('.')[:-1]
+    return '.'.join(chunks)
+
 def execute_dir(dir: Path, dest_dir: Path, ctx: dict[str, Any] | None = None, **kwargs) -> None:
 
     if ctx is None:
@@ -50,16 +53,17 @@ def execute_dir(dir: Path, dest_dir: Path, ctx: dict[str, Any] | None = None, **
         warn(f'Skipping {path} because it is not a file nor a directory')
 
     def visit_code(path: Path, ctx) -> None:
-        dest_path = dest_dir / path.relative_to(dir)
         if path.is_file():
             if path.suffixes and path.suffixes[-1] == '.tply':
                 with open(path, 'r') as f:
                     contents = f.read()
                 result = evaluate(contents, ctx, filename=str(path.relative_to(Path.cwd())), **kwargs)
+                dest_path = dest_dir / path.parent.relative_to(dir) / strip_ext(path.name)
                 with open(dest_path, 'w') as f:
                     f.write(result)
             return
         if path.is_dir():
+            dest_path = dest_dir / path.relative_to(dir)
             ctx = clone(ctx)
             helpers_file = path / (helpers_dir_name + '.py')
             if helpers_file.exists():
