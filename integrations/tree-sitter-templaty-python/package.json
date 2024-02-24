@@ -1,0 +1,34 @@
+{
+  "name": "tree-sitter-templaty-python",
+  "description": "Templaty grammar for tree-sitter targeting Python templates",
+  "version": "1.0.0",
+  "main": "bindings/node",
+  "keywords": [
+    "parser",
+    "python",
+    "templaty"
+  ],
+  "author": "Sam Vervaeck",
+  "license": "MIT",
+  "scripts": {
+    "build": "tree-sitter generate && node-gyp build"
+  },
+  "tree-sitter": [
+    {
+      "scope": "source.templaty.python",
+      "file-types": [
+        "tply"
+      ],
+      "highlights": [
+        "queries/highlights.scm",
+        "node_modules/tree-sitter-python/queries/highlights.scm"
+      ]
+    }
+  ],
+  "dependencies": {
+    "nan": "^2.18.0"
+  },
+  "devDependencies": {
+    "tree-sitter-python": "^0.20.4"
+  }
+}

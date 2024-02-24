@@ -1,0 +1,6 @@
+
+# used by tools like npm
+node_modules/
+
+# used by node-gyp
+/build/
