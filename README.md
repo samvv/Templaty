@@ -76,21 +76,44 @@ This should make the main command `templaty` available in your terminal.
 
 ### Neovim
 
-⚠️ These definitions are stil under development.
+⚠️ These instructions are stil under development.
+
+First you must clone this repository. It contains definitions for
+_tree-sitter_, which Neovim can use.
+
+```sh
+git clone https://github.com/samvv/Templaty
+```
+
+Next, configure these parsers in `init.lua`:
 
 ```lua
 local parser_config = require "nvim-treesitter.parsers".get_parser_configs()
+
 parser_config.templaty = {
   install_info = {
-    url = "https://github.com/samvv/tree-sitter-templaty",
-    files = {"src/parser.c", "src/scanner.c"},
-    branch = "main",
+    url = "/path/to/cloned/repo/integrations/tree-sitter-templaty-plaintext",
+    files = {"src/parser.c"},
+    -- branch = "main",
     generate_requires_npm = false,
     requires_generate_from_grammar = false,
   },
   filetype = "templaty", 
 }
+
+parser_config.templatypython = {
+  install_info = {
+    url = "/path/to/cloned/repo/integrations/tree-sitter-templaty-python",
+    files = {"src/parser.c", "src/scanner.c"},
+    -- branch = "main",
+    generate_requires_npm = false,
+    requires_generate_from_grammar = false,
+  },
+  filetype = "templaty.python",
+}
 ```
+
+You will also need to configure Neovim to detect these files as `templaty.python` etc.
 
 ## FAQ
 
