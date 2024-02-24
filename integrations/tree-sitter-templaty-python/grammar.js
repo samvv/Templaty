@@ -10,9 +10,13 @@ module.exports = grammar(Py, {
   // extras: $ => [],
 
   // word: $ => $.identifier,
-  
+
   conflicts: $ => [
+
+    // Templaty
     [$.expression, $._templaty_statement],
+
+    // Python
     [$.primary_expression, $.pattern],
     [$.primary_expression, $.list_splat_pattern],
     [$.tuple, $.tuple_pattern],
@@ -21,6 +25,7 @@ module.exports = grammar(Py, {
     [$.named_expression, $.as_pattern],
     [$.print_statement, $.primary_expression],
     [$.type_alias_statement, $.primary_expression],
+
   ],
 
   rules: {
