@@ -8,7 +8,7 @@ correct and readable programming code. It features fine-grained control over
 whitespacing and indentation and a rich meta-language that allows full control
 over the end result.
 
-🌈 There now is [a syntax plugin for Vim][2]!
+🌈 There now is [a syntax plugin for Neovim][2]!
 
 The template syntax was inspired by [Jinja2][1] and should be very easy to pick
 up.
@@ -76,44 +76,8 @@ This should make the main command `templaty` available in your terminal.
 
 ### Neovim
 
-⚠️ These instructions are stil under development.
-
-First you must clone this repository. It contains definitions for
-_tree-sitter_, which Neovim can use.
-
-```sh
-git clone https://github.com/samvv/Templaty
-```
-
-Next, configure these parsers in `init.lua`:
-
-```lua
-local parser_config = require "nvim-treesitter.parsers".get_parser_configs()
-
-parser_config.templaty = {
-  install_info = {
-    url = "/path/to/cloned/repo/integrations/tree-sitter-templaty-plaintext",
-    files = {"src/parser.c"},
-    -- branch = "main",
-    generate_requires_npm = false,
-    requires_generate_from_grammar = false,
-  },
-  filetype = "templaty", 
-}
-
-parser_config.templatypython = {
-  install_info = {
-    url = "/path/to/cloned/repo/integrations/tree-sitter-templaty-python",
-    files = {"src/parser.c", "src/scanner.c"},
-    -- branch = "main",
-    generate_requires_npm = false,
-    requires_generate_from_grammar = false,
-  },
-  filetype = "templaty.python",
-}
-```
-
-You will also need to configure Neovim to detect these files as `templaty.python` etc.
+There is a [Templaty plugin][2] available 
+that is easy to set up.
 
 ## FAQ
 
@@ -144,5 +108,5 @@ Templaty is licensed under the Apache 2.0 license, in the hope it will help deve
 write better programs.
 
 [1]: https://jinja.palletsprojects.com/
-[2]: https://github.com/samvv/vim-templaty
+[2]: https://github.com/samvv/templaty.nvim
 [3]: https://en.wikipedia.org/wiki/Identity_matrix
