@@ -1,0 +1,5 @@
+node_modules/
+Makefile
+
+# compiled by tree-sitter
+*.wasm
