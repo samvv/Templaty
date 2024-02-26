@@ -1,13 +1,34 @@
 
-from typing import Any
-import math
-from sweetener import set_parent_nodes
+from functools import _lru_cache_wrapper
+from typing import Any, assert_never
+from sweetener import set_parent_nodes, warn
 from datetime import datetime
+from textwrap import indent, dedent
 
 from .outline import outline
 from .ast import *
-from .util import is_blank, is_whitespace, to_snake_case, to_camel_case
-from .lines import Lines, Line, insert_after, render, rfind, size
+from .util import is_blank, to_snake_case, to_camel_case
+
+class OutputBase:
+
+    def __init__(self) -> None:
+        self.indent_override: str | None = None 
+
+class TextOutput(OutputBase):
+
+    def __init__(self, text = '') -> None:
+        super().__init__()
+        self.text = text
+
+class BlockOutput(OutputBase):
+
+    def __init__(self, children: list['Output'] | None = None) -> None:
+        super().__init__()
+        if children is None:
+            children = []
+        self.children = children
+
+Output = TextOutput | BlockOutput
 
 class Env:
 
@@ -96,8 +117,8 @@ def evaluate(template: str | Template, ctx: dict[str, Any] = {}, indentation = '
             return val[index]
         elif isinstance(expr, SliceExpression):
             val = eval_expr(expr.expression, env)
-            low = eval_expr(expr.min, env)
-            high = eval_expr(expr.max, env)
+            low = expr.min and eval_expr(expr.min, env)
+            high = expr.max and eval_expr(expr.max, env)
             return val[low:high]
         elif isinstance(expr, MemberExpression):
             out = eval_expr(expr.expression, env)
@@ -127,13 +148,10 @@ def evaluate(template: str | Template, ctx: dict[str, Any] = {}, indentation = '
         else:
             raise RuntimeError("Could not evaluate Templately expression: unknown expression {}.".format(expr))
 
-    def wrap(text: str) -> Lines:
-        if not text:
-            return []
-        lines = list(Line(text) for text in text.splitlines())
-        if text[-1] != '\n':
-            lines[-1].end = False
-        return lines
+    def align(text: str) -> str:
+        if text.find('\n') != -1:
+            text = indent(dedent(text), indentation * curr_indent)
+        return text
 
     at_blank_line = True
     curr_indent = 0
@@ -151,114 +169,42 @@ def evaluate(template: str | Template, ctx: dict[str, Any] = {}, indentation = '
                     else:
                         at_blank_line = False
 
+    def eval_loop(stmt: ForInStatement | JoinStatement, env: Env, sep: Expression | None = None) -> Output:
+        value = eval_expr(stmt.expression, env)
+        out = BlockOutput()
+        elements = list(value)
+        for i, element in enumerate(elements):
+            inner_env = Env(env)
+            inner_env.set('index', i)
+            bind_pattern(stmt.pattern, element, inner_env)
+            result = eval_stmt(stmt.body, inner_env)
+            out.children.append(result)
+        # for i, res in enumerate(results):
+        #     if sep_value and i < len(results)-1:
+        #         k = rfind(res, lambda ch: not is_whitespace(ch))
+        #         if k == -1:
+        #             k = size(res)
+        #         insert_after(res, k, wrap(str(sep_value)))
+        #     out.extend(res)
+        return out
 
-    def dedent(lines: Lines, at_blank_line=True) -> None:
-        indent_length = get_indentation(lines, at_blank_line)
-        remaining = indent_length
-        for line in lines:
-            if at_blank_line:
-                removed = min(remaining, len(line.text))
-                line.text = line.text[removed:]
-                remaining -= removed
-            if line.end:
-                at_blank_line = True 
-                remaining = indent_length
-
-    def remove_last_line(lines: Lines) -> None:
-        k = len(lines)-1
-        for line in reversed(lines):
-            i = len(line.text)-1
-            while i >= 0:
-                if not is_blank(line.text[i]):
-                    break
-                i -= 1
-            if i != -1:
-                line.text = line.text[0:i+1]
-                break
-            line = lines[k]
-            del lines[k]
-            if line.end:
-                break
-            k -= 1
-
-    def rtrim(lines: Lines) -> None:
-        k = len(lines)-1
-        for line in reversed(lines):
-            i = len(line.text)-1
-            while i >= 0:
-                if not is_blank(line.text[i]):
-                    break
-                i -= 1
-            if i == -1:
-                del lines[k]
-            else:
-                line.text = line.text[0:i+1]
-                break
-            k -= 1
-
-    def indent(lines: Lines, indent_level: int, at_blank_line=True) -> None:
-        indentation = ' ' * indent_level
-        for line in lines:
-            if at_blank_line:
-                if is_blank(line.text):
-                    continue
-                line.text = indentation + line.text
-            at_blank_line = line.end
-
-    def get_indentation(lines: Lines, at_blank_line=True, default_indent=0):
-        min_indent = math.inf
-        curr_indent = 0
-        for line in lines:
-            for ch in line.text:
-                if not at_blank_line:
-                    break
-                if is_blank(ch):
-                    curr_indent += 1
-                else:
-                    at_blank_line = False
-            if line.end:
-                if not at_blank_line and curr_indent < min_indent:
-                    min_indent = curr_indent
-                at_blank_line = True
-                curr_indent = 0
-        if min_indent == math.inf:
-            return default_indent if at_blank_line else curr_indent 
-        return min_indent
-
-    def eval_loop(stmt: ForInStatement | JoinStatement, env: Env, sep: Expression | None = None) -> Lines:
-            value = eval_expr(stmt.expression, env)
-            sep_value = sep and eval_expr(sep, env)
-            lines = []
-            elements = list(value)
-            results = []
-            for i, element in enumerate(elements):
-                inner_env = Env(env)
-                inner_env.set('index', i)
-                bind_pattern(stmt.pattern, element, inner_env)
-                res = eval_stmt(stmt.body, inner_env)
-                if size(res) > 0:
-                    results.append(res)
-            for i, res in enumerate(results):
-                if sep_value and i < len(results)-1:
-                    k = rfind(res, lambda ch: not is_whitespace(ch))
-                    if k == -1:
-                        k = size(res)
-                    insert_after(res, k, wrap(str(sep_value)))
-                lines.extend(res)
-            return lines
-
-    def eval_stmt(stmt: Node, env: Env) -> Lines:
+    def eval_stmt(stmt: Node, env: Env) -> Output:
 
         if isinstance(stmt, Body):
-            out = []
+            out = BlockOutput()
+            def write(text):
+                nonlocal out
+                advance(text)
+                out.children.append(TextOutput(text))
+            env.set('write', write)
             for stmt in stmt.elements:
-                lines = eval_stmt(stmt, env)
-                out.extend(lines)
+                result = eval_stmt(stmt, env)
+                out.children.append(result)
             return out
 
         if isinstance(stmt, TextStatement):
             advance(stmt.text)
-            return wrap(stmt.text)
+            return TextOutput(stmt.text)
 
         if isinstance(stmt, IfStatement):
             for case in stmt.cases:
@@ -267,7 +213,7 @@ def evaluate(template: str | Template, ctx: dict[str, Any] = {}, indentation = '
                 value = eval_expr(case.test, env)
                 if value:
                     return eval_stmt(case.body, env)
-            return []
+            return TextOutput('')
 
         if isinstance(stmt, ForInStatement):
             return eval_loop(stmt, env)
@@ -277,15 +223,13 @@ def evaluate(template: str | Template, ctx: dict[str, Any] = {}, indentation = '
 
         if isinstance(stmt, ExpressionStatement):
             value = eval_expr(stmt.expression, env)
-            return wrap(str(value))
+            return TextOutput(align(str(value)))
 
         if isinstance(stmt, SetIndentStatement):
             level = eval_expr(stmt.level, env)
-            lines = eval_stmt(stmt.body, env)
-            for line in lines:
-                if line.indent_override is None:
-                    line.indent_override = level
-            return lines
+            result = eval_stmt(stmt.body, env)
+            result.indent_override = indentation * level
+            return result
 
         if isinstance(stmt, CodeBlock):
             globals = global_env.to_dict()
@@ -294,16 +238,16 @@ def evaluate(template: str | Template, ctx: dict[str, Any] = {}, indentation = '
             for k, v in locals.items():
                 if k not in env or env.lookup(k) != v:
                     env.set(k, v)
-            return []
+            return TextOutput('')
 
         raise RuntimeError(f'unexpected node {stmt}')
 
     if isinstance(template, str):
         from .scanner import Scanner
         from .parser import Parser
-        sc = Scanner(filename, template)
-        p = Parser(sc)
-        template = p.parse_all()
+        scanner = Scanner(filename, template)
+        parser = Parser(scanner)
+        template = parser.parse_all()
         set_parent_nodes(template)
 
     global_env = Env()
@@ -312,14 +256,71 @@ def evaluate(template: str | Template, ctx: dict[str, Any] = {}, indentation = '
     global_env.set('now', datetime.now().strftime("%b %d %Y %H:%M:%S"))
 
     outline(template)
-    lines = eval_stmt(template.body, global_env)
 
-    out = ''
-    for line in lines:
-        if line.indent_override is not None:
-            out += indentation * line.indent_override
-        out += line.text
-        if line.end:
-            out += '\n'
+    output = eval_stmt(template.body, global_env)
 
-    return out
+    at_blank_line = True
+    curr_indent = 0
+
+    def get_indentation(output: Output, at_blank_line=True, default_indent=0, curr_indent=0) -> int:
+        min_indent = None
+        def visit(output: Output) -> None:
+            nonlocal at_blank_line, curr_indent, min_indent
+            if isinstance(output, TextOutput):
+                for ch in output.text:
+                    if at_blank_line:
+                        if is_blank(ch):
+                            curr_indent += 1
+                            continue
+                        if ch == '\n':
+                            at_blank_line = False
+                        elif min_indent is None or curr_indent < min_indent:
+                            min_indent = curr_indent
+                    else:
+                        if ch == '\n':
+                            at_blank_line = True
+                            curr_indent = 0
+                return
+            if isinstance(output, BlockOutput):
+                for child in output.children:
+                    visit(child)
+                return
+            assert_never(output)
+        visit(output)
+        if min_indent is None:
+            min_indent = default_indent if at_blank_line else curr_indent 
+        return min_indent
+
+    def render(output: Output, dedent_count: int | None, indentation: str | None) -> str:
+        nonlocal at_blank_line, curr_indent
+        if isinstance(output, TextOutput):
+            out = ''
+            for ch in output.text:
+                if ch == '\n':
+                    at_blank_line = True
+                    curr_indent = 0
+                    out += ch
+                else:
+                    if at_blank_line:
+                        if is_blank(ch):
+                            curr_indent += 1
+                            if dedent_count is not None and curr_indent <= dedent_count:
+                                continue
+                        else:
+                            if indentation is not None:
+                                out += indentation
+                            at_blank_line = False
+                    out += ch
+            return out
+        if isinstance(output, BlockOutput):
+            out = ''
+            if output.indent_override:
+                dedent_count = get_indentation(output, at_blank_line=at_blank_line, curr_indent=curr_indent)
+                indentation = output.indent_override
+            for child in output.children:
+                out += render(child, dedent_count, indentation)
+            return out
+        assert_never(output)
+
+    return render(output, None, None)
+

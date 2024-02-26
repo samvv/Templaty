@@ -41,6 +41,14 @@ def emit(node: Node, out = sys.stdout) -> None:
             out.write('{% endif %}')
             return
 
+        if isinstance(node, SetIndentStatement):
+            out.write('{% setindent ')
+            visit(node.level)
+            out.write(' %}')
+            visit(node.body)
+            out.write('{% endsetindent %}')
+            return
+
         if isinstance(node, JoinStatement):
             out.write('{% join ')
             visit(node.pattern)
