@@ -40,11 +40,9 @@ def execute_dir(dir: Path, dest_dir: Path, ctx: dict[str, Any] | None = None, **
     def visit_helpers(path: Path, ctx) -> None:
         if path.is_file():
             if path.suffixes and path.suffixes[-1] == '.py':
-                module = dynamic_import(f'templaty.helpers.{path.stem}', path)
-                for k, v in module.__dict__.items():
-                    if k.startswith(helper_export_prefix):
-                        name = k[len(helper_export_prefix):]
-                        ctx[name] = v
+                with open(path, 'r') as f:
+                    code = f.read()
+                exec(compile(code, path, 'exec'), ctx)
             return
         if path.is_dir():
             for path in path.iterdir():
