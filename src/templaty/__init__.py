@@ -1,4 +1,5 @@
 
+import shutil
 import sys
 from pathlib import Path
 from types import ModuleType
@@ -32,10 +33,13 @@ def strip_ext(name: str) -> str:
     chunks = name.split('.')[:-1]
     return '.'.join(chunks)
 
-def execute_dir(dir: Path, dest_dir: Path, ctx: dict[str, Any] | None = None, **kwargs) -> None:
+def execute_dir(dir: Path, dest_dir: Path, ctx: dict[str, Any] | None = None, force: bool = False, **kwargs) -> None:
 
     if ctx is None:
         ctx = {}
+
+    def is_ignored(path: Path) -> bool:
+        return path.name in [ '_helpers', '_helpers.py', '__pycache__' ]
 
     def visit_helpers(path: Path, ctx) -> None:
         if path.is_file():
@@ -51,14 +55,25 @@ def execute_dir(dir: Path, dest_dir: Path, ctx: dict[str, Any] | None = None, **
         warn(f'Skipping {path} because it is not a file nor a directory')
 
     def visit_code(path: Path, ctx) -> None:
+        if is_ignored(path):
+            return
         if path.is_file():
             if path.suffixes and path.suffixes[-1] == '.tply':
                 with open(path, 'r') as f:
                     contents = f.read()
                 result = evaluate(contents, ctx, filename=str(path.relative_to(Path.cwd())), **kwargs)
                 dest_path = dest_dir / path.parent.relative_to(dir) / strip_ext(path.name)
+                if not force and dest_path.exists():
+                    warn(f'Skipping {dest_path} because it already exists')
+                    return
                 with open(dest_path, 'w') as f:
                     f.write(result)
+            else:
+                dest_path = dest_dir / path.relative_to(dir)
+                if not force and dest_path.exists():
+                    warn(f'Skipping {dest_path} because it already exists')
+                    return
+                shutil.copy2(path, dest_path)
             return
         if path.is_dir():
             dest_path = dest_dir / path.relative_to(dir)
