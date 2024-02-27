@@ -1,8 +1,7 @@
 
+import math
 from typing import Callable, TypeGuard, TypeVar, cast
 from functools import cache
-
-from sweetener.math import math
 
 from .emitter import emit
 from .util import is_blank
@@ -363,12 +362,14 @@ def outline(template: Template) -> None:
             or isinstance(node, ExpressionStatement):
             return
         if isinstance(node, IfStatement):
-            remove_left_while(node.prev_sibling, is_blank)
+            if is_block(node):
+                remove_left_while(node.prev_sibling, is_blank)
             for case in node.cases:
                 undent_specials(case)
             return
         if isinstance(node, IfStatementCase):
-            remove_left_while(node.body.last_child, is_blank)
+            if is_block(node.parent):
+                remove_left_while(node.body.last_child, is_blank)
             return
         if isinstance(node, ForInStatement) \
             or isinstance(node, JoinStatement) \
