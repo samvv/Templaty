@@ -1,6 +1,5 @@
 
-from functools import _lru_cache_wrapper
-from typing import Any, assert_never
+from typing import Any, assert_never, cast
 from sweetener import set_parent_nodes, warn
 from datetime import datetime
 from textwrap import indent, dedent
@@ -96,6 +95,17 @@ DEFAULT_BUILTINS = {
     'in': lambda key, val: key in val
     }
 
+
+class Ref[T]:
+
+    def __init__(self, value: T) -> None:
+        self.value = value
+
+shared_context = Ref[dict[str, Any]]({})
+
+def load_context() -> dict[str, Any]:
+    return shared_context.value
+
 def evaluate(template: str | Template, ctx: dict[str, Any] = {}, indentation = '  ', filename = "#<anonymous>"):
 
     def bind_pattern(pattern: Pattern, value: Any, env: Env) -> None:
@@ -126,6 +136,9 @@ def evaluate(template: str | Template, ctx: dict[str, Any] = {}, indentation = '
                 out = getattr(out, name)
             return out
         elif isinstance(expr, VarRefExpression):
+            assert(shared_context.value is not None)
+            if expr.name in shared_context.value:
+                return shared_context.value[expr.name]
             if expr.name in env:
                 return env.lookup(expr.name)
             if expr.name == 'globals':

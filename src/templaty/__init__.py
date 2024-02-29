@@ -8,8 +8,7 @@ import importlib.util
 
 from sweetener import clone, warn
 
-from .main import main
-from .evaluator import evaluate
+from .evaluator import evaluate, shared_context, load_context
 
 def execute(filepath: Path, ctx={}, **kwargs) -> str:
     with open(filepath, 'r') as f:
@@ -92,5 +91,10 @@ def execute_dir(dir: Path, dest_dir: Path, ctx: dict[str, Any] | None = None, fo
             return
         warn(f'Skipping {path} because it is not a file nor a directory')
 
-    visit_code(dir, ctx)
+    old_context = shared_context.value
+    shared_context.value = ctx
+    try:
+        visit_code(dir, ctx)
+    finally:
+        shared_context.value = old_context
 
