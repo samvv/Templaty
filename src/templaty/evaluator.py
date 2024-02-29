@@ -163,7 +163,7 @@ def evaluate(template: str | Template, ctx: dict[str, Any] = {}, indentation = '
 
     def align(text: str) -> str:
         if text.find('\n') != -1:
-            text = indent(dedent(text), indentation * curr_indent)
+            text = indent(dedent(text), ' ' * curr_indent).lstrip()
         return text
 
     at_blank_line = True
